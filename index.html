@@ -4018,10 +4018,19 @@ async function assinarPlano() {
 
   try {
     // 1. Pede ao backend para criar a preferência de pagamento
+    // Pega o email do usuário logado automaticamente
+    const usuarioLogado = auth.currentUser;
+    if (!usuarioLogado) {
+      alert('Você precisa estar logado para renovar o plano!');
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Renovar Agora`;
+      return;
+    }
+
     const resp = await fetch(`${BACKEND_URL}/criar-preferencia`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plano: planoSel })
+      body: JSON.stringify({ email: usuarioLogado.email, plano: planoSel })
     });
 
     if (!resp.ok) throw new Error('Erro ao criar preferência');
@@ -4034,7 +4043,7 @@ async function assinarPlano() {
 
     // 3. Abre o Checkout Pro em lightbox (popup dentro do app)
     // O SDK do MP injeta o popup automaticamente
-    MercadoPago_abrirCheckout(dados.preferenceId);
+    MercadoPago_abrirCheckout(dados.initPoint);
 
   } catch (err) {
     console.error('Erro no pagamento:', err);
@@ -4051,35 +4060,10 @@ async function assinarPlano() {
   }
 }
 
-// ── Inicializa o SDK do Mercado Pago e abre o checkout ──────────────────────
-function MercadoPago_abrirCheckout(preferenceId) {
-  // Garante que o SDK foi carregado
-  if (typeof MercadoPago === 'undefined') {
-    console.error('SDK do Mercado Pago não carregado');
-    return;
-  }
-
-  const mp = new MercadoPago(MP_PUBLIC_KEY, { locale: 'pt-BR' });
-
-  // Cria o botão invisível e dispara o checkout
-  const checkout = mp.checkout({
-    preference: { id: preferenceId },
-    render: {
-      container: '#mp-checkout-container',
-      label: 'Renovar Agora'
-    },
-    callbacks: {
-      onReady: () => {
-        // Dispara automaticamente o lightbox
-        const btn = document.querySelector('#mp-checkout-container button');
-        if (btn) btn.click();
-      },
-      onError: (err) => {
-        console.error('Erro MP checkout:', err);
-        mostrarErroPagamento();
-      }
-    }
-  });
+// ── Abre o Checkout Pro do Mercado Pago ─────────────────────────────────────
+function MercadoPago_abrirCheckout(initPoint) {
+  // Abre o checkout numa nova aba — método oficial e mais confiável do MP
+  window.open(initPoint, '_blank');
 }
 
 // ── Exibe mensagem de erro amigável ─────────────────────────────────────────
