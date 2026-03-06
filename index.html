@@ -618,8 +618,10 @@ body::after{
 .section-filtro.show{display:block}
 .section-filtro-titulo{font-family:var(--font-display);font-size:clamp(24px,3.5vw,34px);letter-spacing:3px;margin-bottom:6px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff,rgba(255,255,255,.9));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-filtro-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
-.grid-filtro{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
-.grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-filtro{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
+.grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
+.grid-filtro .poster-wrap,.grid-filtro .tv-card{background:#1b1b1b;border-radius:10px;padding:5px;text-align:center}
+.grid-filtro .poster-wrap img,.grid-filtro .tv-card img{width:100%;border-radius:8px}
 .empty-state{padding:48px;text-align:center;color:var(--muted2);font-size:14px}
 
 /* MODAL INFO PREMIUM */
@@ -789,8 +791,8 @@ body::after{
   #buscaInput{display:none}
   .header-center{position:static;transform:none}
   .banner{padding:40px 24px;height:65vh}.banner-title{font-size:52px}.banner-desc{display:none}.banner-meta{display:none}
-  .row{padding:0 20px}.section-filtro{padding:24px 20px 80px}.grid-filtro{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-  .grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow-y:auto}
+  .row{padding:0 20px}.section-filtro{padding:24px 20px 80px}.grid-filtro{grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
+  .grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;overflow-y:auto}
   #searchResults{padding:20px 20px 80px}
   #drawer{width:280px}
   #appMain{padding-bottom:70px}
@@ -1767,7 +1769,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
       <div class="rsp-logo">
         <span class="rsp-logo-royal">ROYAL</span><span class="rsp-logo-streams">STREAMS</span>
       </div>
-      <div class="rsp-title-wrap">
+      <div class="rsp-title-wrap" style="display:none!important;visibility:hidden!important">
         <span class="rsp-title" id="playerTitulo"></span>
       </div>
       <div class="rsp-header-actions">
@@ -1971,6 +1973,118 @@ const auth=firebase.auth(),db=firebase.firestore();
 // Persistência de login: mantém o usuário logado mesmo após fechar o app
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
 
+// ══════════════════════════════════════════════════════════
+// SERVICE WORKER INLINE — cache shell do app para offline
+// ══════════════════════════════════════════════════════════
+(function(){
+  if(!('serviceWorker' in navigator)) return;
+  const swCode = `
+const CACHE='royal-v2';
+const SHELL=['/'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL).catch(()=>{})));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  const url=e.request.url;
+  // Não cacheia Firestore, Firebase Auth nem APIs externas
+  if(url.includes('firestore.googleapis.com')||url.includes('firebase')||url.includes('googleapis.com')) return;
+  e.respondWith(
+    caches.match(e.request).then(cached=>{
+      const net=fetch(e.request).then(res=>{
+        if(res&&res.status===200&&e.request.method==='GET'){
+          const clone=res.clone();
+          caches.open(CACHE).then(c=>c.put(e.request,clone));
+        }
+        return res;
+      }).catch(()=>cached);
+      return cached||net;
+    })
+  );
+});`;
+  const blob = new Blob([swCode],{type:'text/javascript'});
+  const swURL = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swURL).then(()=>console.log('[SW] Registrado')).catch(()=>{});
+})();
+
+// ══════════════════════════════════════════════════════════
+// CACHE IndexedDB — armazena os conteúdos do Firebase
+// para carregamento instantâneo mesmo sem internet
+// ══════════════════════════════════════════════════════════
+const IDB_NAME  = 'royalDB';
+const IDB_VER   = 2;
+const IDB_STORE = 'catalogo';
+const IDB_CACHE_TTL = 15 * 60 * 1000; // 15 minutos
+
+let _idb = null;
+
+function _abrirIDB(){
+  return new Promise((res,rej)=>{
+    if(_idb){ res(_idb); return; }
+    const req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains(IDB_STORE))
+        d.createObjectStore(IDB_STORE, {keyPath:'chave'});
+    };
+    req.onsuccess = e => { _idb = e.target.result; res(_idb); };
+    req.onerror   = () => rej(req.error);
+  });
+}
+
+async function idbGet(chave){
+  try{
+    const d = await _abrirIDB();
+    return new Promise((res,rej)=>{
+      const tx  = d.transaction(IDB_STORE,'readonly');
+      const req = tx.objectStore(IDB_STORE).get(chave);
+      req.onsuccess = ()=>res(req.result||null);
+      req.onerror   = ()=>rej(req.error);
+    });
+  }catch(e){ return null; }
+}
+
+async function idbSet(chave, valor){
+  try{
+    const d = await _abrirIDB();
+    return new Promise((res,rej)=>{
+      const tx  = d.transaction(IDB_STORE,'readwrite');
+      const req = tx.objectStore(IDB_STORE).put({chave, valor, ts: Date.now()});
+      req.onsuccess = ()=>res(true);
+      req.onerror   = ()=>rej(req.error);
+    });
+  }catch(e){ return false; }
+}
+
+async function idbDel(chave){
+  try{
+    const d = await _abrirIDB();
+    return new Promise((res)=>{
+      const tx = d.transaction(IDB_STORE,'readwrite');
+      tx.objectStore(IDB_STORE).delete(chave);
+      tx.oncomplete = ()=>res(true);
+    });
+  }catch(e){ return false; }
+}
+
+// Verifica se o cache ainda é válido (dentro do TTL)
+function idbCacheValido(entry){
+  if(!entry) return false;
+  return (Date.now() - entry.ts) < IDB_CACHE_TTL;
+}
+
+// Limpa o cache (usado quando forçar atualização)
+async function limparCacheConteudo(){
+  await idbDel('catalogo_principal');
+  console.log('[Cache] Cache de conteúdo limpo');
+}
+
+
+
 // ── PERSISTÊNCIA DE SESSÃO ──
 // Firebase já mantém o usuário logado automaticamente.
 // Salvamos o perfil escolhido no localStorage para restaurar direto.
@@ -2128,123 +2242,145 @@ const svgTV=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke=
 const tipoLabels={filmes:`${svgFilme} Filmes`,series:`${svgSerie} Séries`,animes:`${svgAnime} Animes`,animestv:`${svgAnimeTV} Animes TV`,tv:`${svgTV} TV ao Vivo`};
 const tipoMap={filmes:'filme',series:'serie',animes:'anime',animestv:'anime_tv',tv:'tv'};
 
+// ══════════════════════════════════════════════════════════════
+// SISTEMA DE HISTÓRICO DE NAVEGAÇÃO PROFUNDO
+// Pilha interna: início → seção → série → temporada → episódio
+// O botão físico/virtual "voltar" sempre desfaz um passo por vez
+// ══════════════════════════════════════════════════════════════
+
+const _navStack = []; // cada entry: { tipo, payload }
+let   _navLock  = false; // evita recursão durante restauração
+
+// ── Empurra um estado novo e cria entrada real no history API ──
+function _navPush(state){
+  _navStack.push(state);
+  history.pushState({ _rs: true, idx: _navStack.length - 1 }, '', location.pathname + location.search + '#rs' + _navStack.length);
+}
+
+// ── Intercepta o botão voltar do navegador / celular ──
+window.addEventListener('popstate', function(){
+  if(_navLock) return;
+  _processarVoltar();
+});
+
+function _processarVoltar(){
+  // Prioridade 1 — player aberto
+  const playerCont = document.getElementById('playerContainer');
+  if(playerCont && playerCont.classList.contains('show')){
+    fecharPlayer();
+    // Reempurra para manter nosso estado na fila do browser
+    history.pushState({ _rs:true, idx: _navStack.length }, '', location.pathname + '#rs' + (_navStack.length+1));
+    return;
+  }
+
+  // Prioridade 2 — seletor de player aberto
+  const seletor = document.getElementById('modalSeletorPlayer');
+  if(seletor && seletor.style.display !== 'none'){
+    fecharSeletorPlayer();
+    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
+    return;
+  }
+
+  // Prioridade 3 — tela de detalhe aberta (série/filme/anime etc.)
+  const detalhe = document.getElementById('detalheModal');
+  if(detalhe && detalhe.classList.contains('show')){
+    fecharDetalhe();
+    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
+    return;
+  }
+
+  // Prioridade 4 — modal info antigo
+  const infoModal = document.getElementById('infoModal');
+  if(infoModal && infoModal.classList.contains('show')){
+    fecharModal();
+    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
+    return;
+  }
+
+  // Prioridade 5 — volta pela pilha de navegação
+  if(_navStack.length > 1){
+    _navStack.pop();                                    // descarta estado atual
+    const anterior = _navStack[_navStack.length - 1];  // estado anterior
+    _navLock = true;
+    _restaurarEstado(anterior);
+    _navLock = false;
+    history.pushState({ _rs:true, idx: _navStack.length-1 }, '', location.pathname + '#rs' + _navStack.length);
+    return;
+  }
+
+  // Raiz — não sai do app, mantém o estado inicial
+  history.pushState({ _rs:true, idx:0 }, '', location.pathname + '#inicio');
+}
+
+// ── Restaura o estado visualmente sem empurrar na pilha novamente ──
+function _restaurarEstado(state){
+  if(!state) return;
+  switch(state.tipo){
+    case 'inicio':  _renderInicio();              break;
+    case 'secao':   _renderSecao(state.secao);    break;
+    case 'detalhe': if(state.item) { const d=document.getElementById('detalheModal'); if(d) d.classList.add('show'); } break;
+    case 'temporada': /* temporadas ficam abertas dentro do detalhe — não precisa restaurar separadamente */ break;
+  }
+}
+
+function _renderInicio(){
+  document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
+  const el = document.getElementById('searchResults'); if(el) el.style.display = 'none';
+  const pi = document.getElementById('pagina-inicio'); if(pi) pi.style.display = 'block';
+  document.body.dataset.secaoAtiva = 'inicio';
+  if(typeof updateBottomNav === 'function') updateBottomNav('inicio');
+}
+
+// Inicializar com estado raiz
+document.addEventListener('DOMContentLoaded', function(){
+  _navStack.push({ tipo: 'inicio' });
+  history.replaceState({ _rs:true, idx:0 }, '', location.pathname + '#inicio');
+});
+
+// ── navegar(secao): chamado pelos botões do menu ──
 function navegar(secao){
   fecharDrawer();
+  _navPush({ tipo: 'secao', secao });
+  _renderSecao(secao);
+}
 
-  // Salvar seção anterior para o botão voltar
-  const secaoAnterior = document.body.dataset.secaoAtiva || 'inicio';
-
-  // Esconder TODAS as páginas
+function _renderSecao(secao){
   document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
+  const sr = document.getElementById('searchResults'); if(sr) sr.style.display = 'none';
 
-  // Esconder busca
-  document.getElementById('searchResults').style.display = 'none';
-
-  // Mostrar só a página da seção
   const pagina = document.getElementById('pagina-' + secao);
   if(pagina) pagina.style.display = 'block';
 
-  // Atualizar nav
   document.querySelectorAll('.drawer-item[id^="nav-"]').forEach(i => i.classList.remove('active'));
   const navEl = document.getElementById('nav-' + secao);
   if(navEl) navEl.classList.add('active');
 
-  // Guardar seção ativa
   document.body.dataset.secaoAtiva = secao;
+  if(typeof updateBottomNav === 'function') updateBottomNav(secao);
 
-  // Atualizar histórico do navegador para o botão voltar do celular funcionar
-  if(secao !== 'inicio'){
-    history.pushState({ secao: secao }, '', '#' + secao);
-  } else {
-    history.pushState({ secao: 'inicio' }, '', '#inicio');
-  }
-  updateBottomNav(secao);
+  if(secao === 'inicio') return;
 
-  // Se não é início, popular o grid da página
-  if(secao !== 'inicio'){
-    const tipo = tipoMap[secao];
-    const gridId = 'grid-' + secao;
-    const subId  = 'sub-'  + secao;
-    const grid   = document.getElementById(gridId);
-    const sub    = document.getElementById(subId);
-    if(!grid) return;
+  const tipo   = tipoMap[secao];
+  const grid   = document.getElementById('grid-' + secao);
+  const sub    = document.getElementById('sub-'  + secao);
+  if(!grid) return;
 
-    if(secao === 'favoritos'){
-      const itens = favoritosAtual || [];
-      if(sub) sub.textContent = itens.length + ' título' + (itens.length !== 1 ? 's' : '') + ' favoritado' + (itens.length !== 1 ? 's' : '');
-      grid.innerHTML = '';
-      if(itens.length === 0){
-        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum favorito ainda</div>';
-      } else {
-        itens.forEach(item => criarPoster(item, grid, item.tipo === 'tv'));
-        grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
-      }
-      return;
-    }
-
-    const itens = todosConteudos.filter(c => c.tipo === tipo);
-    if(sub) sub.textContent = itens.length + ' título' + (itens.length !== 1 ? 's' : '');
+  if(secao === 'favoritos'){
+    const itens = favoritosAtual || [];
+    if(sub) sub.textContent = itens.length + ' título' + (itens.length!==1?'s':'') + ' favoritado' + (itens.length!==1?'s':'');
     grid.innerHTML = '';
-    if(itens.length === 0){
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum conteúdo nesta categoria ainda</div>';
-    } else {
-      const isTV = tipo === 'tv';
-      itens.forEach(item => criarPoster(item, grid, isTV));
-      grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
-    }
+    if(!itens.length) grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum favorito ainda</div>';
+    else { itens.forEach(item => criarPoster(item,grid,item.tipo==='tv')); grid.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*30)); }
+    return;
   }
+
+  const itens = todosConteudos.filter(c => c.tipo === tipo);
+  if(sub) sub.textContent = itens.length + ' título' + (itens.length!==1?'s':'');
+  grid.innerHTML = '';
+  if(!itens.length) grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum conteúdo nesta categoria ainda</div>';
+  else { const isTV = tipo==='tv'; itens.forEach(item=>criarPoster(item,grid,isTV)); grid.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*30)); }
 }
 
-// ── BOTÃO VOLTAR DO CELULAR (popstate) ──
-// Intercepta o botão voltar para fechar modais/player antes de sair da seção
-window.addEventListener('popstate', function(e){
-  // 1. Fechar player aberto
-  const playerCont = document.getElementById('playerContainer');
-  if(playerCont && playerCont.classList.contains('show')){
-    fecharPlayer();
-    // Reempurra estado para não sair da seção
-    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
-    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
-    return;
-  }
-  // 2. Fechar detalhe aberto
-  const detalhe = document.getElementById('detalheModal');
-  if(detalhe && detalhe.classList.contains('show')){
-    fecharDetalhe();
-    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
-    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
-    return;
-  }
-  // 3. Fechar modal de info
-  const infoModal = document.getElementById('infoModal');
-  if(infoModal && infoModal.classList.contains('show')){
-    fecharModal();
-    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
-    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
-    return;
-  }
-  // 4. Navegar para a seção do estado histórico
-  const secao = (e.state && e.state.secao) ? e.state.secao : 'inicio';
-  const paginaAlvo = document.getElementById('pagina-' + secao);
-  if(paginaAlvo || secao === 'inicio'){
-    // Restaura seção sem criar novo estado no histórico
-    document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
-    document.getElementById('searchResults').style.display = 'none';
-    if(secao === 'inicio'){
-      const paginaInicio = document.getElementById('pagina-inicio');
-      if(paginaInicio) paginaInicio.style.display = 'block';
-    } else if(paginaAlvo){
-      paginaAlvo.style.display = 'block';
-    }
-    document.body.dataset.secaoAtiva = secao;
-    updateBottomNav(secao);
-  }
-});
-
-// Inicializar estado do histórico para a página inicial
-document.addEventListener('DOMContentLoaded', function(){
-  history.replaceState({ secao: 'inicio' }, '', '#inicio');
-});
 
 
 function filtrarPorCategoria(cat,el){
@@ -2598,7 +2734,51 @@ async function carregarCatalogo(){
   };
   Object.values(rows).forEach((r,i)=>{if(r){r.innerHTML='';criarSkeletons(r,i===5?4:6,i===5)}});
 
-  // Todas as coleções, incluindo TV diretamente do Firestore
+  // ── Tenta carregar do cache IndexedDB primeiro ──
+  const cacheEntry = await idbGet('catalogo_principal');
+  if(idbCacheValido(cacheEntry) && cacheEntry.valor && cacheEntry.valor.length > 0){
+    console.log('[Cache] Carregando '+cacheEntry.valor.length+' itens do IndexedDB');
+    _renderizarConteudos(cacheEntry.valor, rows);
+    hideLoading();
+    // Atualiza em background sem bloquear a UI
+    _atualizarCatalogoBackground(rows);
+    return;
+  }
+
+  // ── Sem cache válido: carrega do Firebase ──
+  await _fetchCatalogoFirebase(rows);
+  hideLoading();
+}
+
+// Renderiza conteúdos já carregados (do cache ou do Firebase)
+function _renderizarConteudos(itens, rows){
+  todosConteudos = itens;
+  Object.values(rows).forEach(r=>{ if(r){ r.innerHTML=''; } });
+
+  itens.forEach(item=>{
+    const isTV = item.tipo==='tv';
+    const row = isTV ? rows.tv :
+      (item.tipo==='filme' ? rows.filmes :
+       item.tipo==='serie' ? rows.series :
+       item.tipo==='anime' ? rows.animes :
+       item.tipo==='anime_tv' ? rows.animestv : null);
+    if(row){ criarPoster(item, row, isTV); }
+    if(!isTV && rows.popular) criarPoster(item, rows.popular, false);
+  });
+
+  Object.entries(rows).forEach(([k,r])=>{
+    if(r && r.innerHTML===''){ r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>'; }
+  });
+
+  const comPoster = itens.filter(c=>c.poster&&c.tipo!=='tv');
+  if(comPoster.length>0){ bannerData=comPoster[Math.floor(Math.random()*Math.min(comPoster.length,5))]; atualizarBanner(bannerData); }
+  renderizarRowFavoritos(); renderizarRowContinuar();
+  document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
+}
+
+// Busca no Firebase e salva no IndexedDB
+async function _fetchCatalogoFirebase(rows){
+  todosConteudos = [];
   const cols=[
     {n:'filmes',    t:'filme',    r:rows.filmes,   isTV:false},
     {n:'series',    t:'serie',    r:rows.series,   isTV:false},
@@ -2625,8 +2805,7 @@ async function carregarCatalogo(){
     }
   }));
 
-  // ── CARREGAR MÚLTIPLAS LISTAS M3U do painel admin ──
-  // Suporta coleções: 'listas', 'playlists', 'listas_m3u'
+  // Carrega listas M3U do admin
   await carregarListasM3U(rows);
 
   if(rows.popular){
@@ -2637,7 +2816,23 @@ async function carregarCatalogo(){
   if(comPoster.length>0){bannerData=comPoster[Math.floor(Math.random()*Math.min(comPoster.length,5))];atualizarBanner(bannerData);}
   renderizarRowFavoritos(); renderizarRowContinuar();
   document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
-  hideLoading();
+
+  // Salva no cache IndexedDB
+  if(todosConteudos.length > 0){
+    await idbSet('catalogo_principal', todosConteudos);
+    console.log('[Cache] '+todosConteudos.length+' itens salvos no IndexedDB');
+  }
+}
+
+// Atualização silenciosa em background (não bloqueia a UI)
+async function _atualizarCatalogoBackground(rows){
+  console.log('[Cache] Atualizando catálogo em background...');
+  try{
+    await _fetchCatalogoFirebase(rows);
+    console.log('[Cache] Catálogo atualizado em background');
+  }catch(e){
+    console.warn('[Cache] Falha ao atualizar em background:', e.message);
+  }
 }
 
 // ── Carrega TODAS as listas M3U importadas pelo admin ──
@@ -2938,21 +3133,66 @@ function confirmarPlayerVLC(){
   if(!item) return;
   const url = typeof item==='string' ? item : item.player_url;
   if(!url) return;
-  // Tenta abrir VLC via intent/deep link
-  const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
-  // Cria link temporário e tenta abrir
-  const link = document.createElement('a');
-  link.href = vlcUrl;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  // Após 1.5s, se ainda estiver na página, redireciona para Play Store
-  const fallbackTimer = setTimeout(()=>{
-    window.open('https://play.google.com/store/apps/details?id=org.videolan.vlc', '_blank');
-  }, 1500);
-  // Cancela o fallback se o app abriu (a aba fica em foco ao voltar)
-  window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once: true });
+
+  const ua = navigator.userAgent || '';
+  const isAndroid = /android/i.test(ua);
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+
+  let opened = false;
+  let fallbackTimer = null;
+
+  function tentarFallbackPlayStore(){
+    if(!opened){
+      window.open('https://play.google.com/store/apps/details?id=org.videolan.vlc', '_blank');
+    }
+  }
+
+  if(isAndroid){
+    // Android: Intent URL - mais compatível com todos os formatos
+    // Tenta intent:// primeiro (Chrome Android abre o app diretamente)
+    const intentUrl = 'intent://' + url.replace(/^https?:\/\//,'') +
+      '#Intent;scheme=' + (url.startsWith('https') ? 'https' : 'http') +
+      ';package=org.videolan.vlc;end';
+    try {
+      window.location.href = intentUrl;
+      opened = true;
+      // Se o app abriu, a página perde foco
+      fallbackTimer = setTimeout(tentarFallbackPlayStore, 2000);
+      window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
+      document.addEventListener('visibilitychange', function onVis(){
+        if(document.hidden){ clearTimeout(fallbackTimer); opened=true; }
+        document.removeEventListener('visibilitychange', onVis);
+      }, { once:true });
+    } catch(e) {
+      // Fallback: vlc:// scheme
+      const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
+      window.location.href = vlcUrl;
+      fallbackTimer = setTimeout(tentarFallbackPlayStore, 2000);
+      window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
+    }
+  } else if(isIOS){
+    // iOS VLC: vlc-x-callback://x-callback-url/stream?url=...
+    const vlcIOS = 'vlc-x-callback://x-callback-url/stream?url=' + encodeURIComponent(url);
+    const link = document.createElement('a');
+    link.href = vlcIOS;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    fallbackTimer = setTimeout(()=>{
+      window.open('https://apps.apple.com/app/vlc-for-mobile/id650377962', '_blank');
+    }, 2000);
+    window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
+  } else {
+    // Desktop: abre o link direto numa nova aba / tenta vlc://
+    const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
+    window.open(vlcUrl, '_blank');
+    // Após 2s, se não abriu nada útil, sugere download
+    fallbackTimer = setTimeout(()=>{
+      window.open('https://www.videolan.org/vlc/', '_blank');
+    }, 2500);
+    window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
+  }
 }
 
 // Injeta animação sheetUp/sheetDown se não existir
@@ -2980,9 +3220,10 @@ function _abrirPlayerReal(item){
   const video = document.getElementById('player');
   const videoWrap = document.getElementById('rspVideoWrap');
 
+  // Destroi instância HLS anterior
   if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
 
-  // Remove iframe anterior se existir
+  // Remove iframe anterior
   const oldIframe = document.getElementById('rspIframe');
   if(oldIframe) oldIframe.remove();
 
@@ -2992,60 +3233,86 @@ function _abrirPlayerReal(item){
   atualizarIconeExpand();
 
   document.getElementById('playerTitulo').textContent = typeof item==='object' ? (item.titulo||'') : '';
-
   if(typeof item==='object' && item.id) adicionarHistorico(item);
 
   mostrarVideoLoading(true);
   esconderErroPlayer();
 
-  const formato = detectarFormatoURL(url);
+  // Reseta o elemento video
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  video.style.display = 'block';
+  document.getElementById('rspProgressWrap').style.display = '';
 
-  function carregarHLScomHlsJs(){
-    if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
-    hlsInstance = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-      backBufferLength: 30,
-      xhrSetup: function(xhr){ xhr.withCredentials = false; }
-    });
-    hlsInstance.loadSource(url);
-    hlsInstance.attachMedia(video);
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
-      mostrarVideoLoading(false);
-      video.muted = false;
-      const playPromise = video.play();
-      if(playPromise !== undefined){
-        playPromise.catch(()=>{
-          // Autoplay bloqueado pelo navegador: tenta mudo depois
-          video.muted = true;
-          video.play().catch(()=>{});
+  // ── Função principal de carregamento ──
+  function playURL(src){
+    const ext = src.toLowerCase().split('?')[0];
+    const isHLS = ext.includes('.m3u8') || ext.includes('.ts');
+
+    if(isHLS || (!ext.includes('.mp4') && !ext.includes('.webm') && !ext.includes('.ogv'))){
+      // Tenta HLS.js primeiro (suporta .m3u8, .ts, e streams sem extensão)
+      if(Hls.isSupported()){
+        hlsInstance = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 30,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          xhrSetup: xhr => { xhr.withCredentials = false; }
         });
-      }
-    });
-    hlsInstance.on(Hls.Events.ERROR, (_, data)=>{
-      console.warn('[HLS.js] Erro:', data.type, data.details);
-      if(data.fatal){
-        mostrarVideoLoading(false);
-        if(data.type === Hls.ErrorTypes.NETWORK_ERROR){
-          // Tenta recuperar 1x; se falhar de novo, mostra erro de link expirado
-          if(!hlsInstance._retried){
+        hlsInstance.loadSource(src);
+        hlsInstance.attachMedia(video);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
+          mostrarVideoLoading(false);
+          video.muted = false;
+          video.play().catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
+        });
+        hlsInstance.on(Hls.Events.ERROR, (_, data)=>{
+          if(!data.fatal) return;
+          mostrarVideoLoading(false);
+          if(data.type === Hls.ErrorTypes.NETWORK_ERROR && !hlsInstance._retried){
             hlsInstance._retried = true;
             hlsInstance.startLoad();
+          } else if(data.type === Hls.ErrorTypes.MEDIA_ERROR){
+            hlsInstance.recoverMediaError();
           } else {
-            mostrarErroPlayer();
+            // Fatal sem recuperação → iframe
+            hlsInstance.destroy(); hlsInstance = null;
+            loadIframe(src);
           }
-        } else if(data.type === Hls.ErrorTypes.MEDIA_ERROR){
-          hlsInstance.recoverMediaError();
-        } else {
-          // Fatal: tenta iframe como fallback
-          hlsInstance.destroy(); hlsInstance=null;
-          carregarIframe(url);
-        }
+        });
+      } else if(video.canPlayType('application/vnd.apple.mpegurl')){
+        // Safari nativo suporta HLS
+        loadNativo(src);
+      } else {
+        loadIframe(src);
       }
-    });
+    } else if(src.includes('youtube.com') || src.includes('youtu.be')){
+      const yid = extrairYouTubeID(src);
+      loadIframe(yid ? `https://www.youtube.com/embed/${yid}?autoplay=1&rel=0` : src);
+    } else {
+      // MP4, WebM etc → nativo, fallback iframe
+      loadNativo(src);
+    }
   }
 
-  function carregarIframe(src){
+  function loadNativo(src){
+    video.style.display = 'block';
+    document.getElementById('rspProgressWrap').style.display = '';
+    video.src = src;
+    video.load();
+    video.addEventListener('canplay', ()=>{
+      mostrarVideoLoading(false);
+      video.play().catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
+    }, {once:true});
+    video.addEventListener('error', ()=>{
+      mostrarVideoLoading(false);
+      loadIframe(src);
+    }, {once:true});
+  }
+
+  function loadIframe(src){
     esconderErroPlayer();
     video.style.display = 'none';
     document.getElementById('rspProgressWrap').style.display = 'none';
@@ -3059,64 +3326,15 @@ function _abrirPlayerReal(item){
     mostrarVideoLoading(false);
   }
 
-  function carregarVideoNativo(src){
-    video.style.display = 'block';
-    document.getElementById('rspProgressWrap').style.display = '';
-    video.src = src;
-    video.load();
-    video.addEventListener('canplay', ()=>{
-      mostrarVideoLoading(false);
-      const p = video.play();
-      if(p !== undefined) p.catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
-    }, {once:true});
-    video.addEventListener('error', ()=>{
-      mostrarVideoLoading(false);
-      // Fallback para iframe se o formato nativo falhar
-      console.warn('[Player] Erro nativo, tentando iframe...');
-      carregarIframe(url);
-    }, {once:true});
-  }
-
-  // Esconde barra de progresso para streams ao vivo (TV)
-  const isLive = formato === 'hls' && (typeof item==='object' && item.tipo === 'tv');
-
-  if(formato === 'hls'){
-    if(Hls.isSupported()){
-      video.style.display = 'block';
-      document.getElementById('rspProgressWrap').style.display = '';
-      carregarHLScomHlsJs();
-    } else if(video.canPlayType('application/vnd.apple.mpegurl')){
-      carregarVideoNativo(url);
-    } else {
-      carregarHLScomHlsJs();
-    }
-  } else if(formato === 'youtube' || formato === 'youtube_embed'){
-    const vid = extrairYouTubeID(url);
-    if(vid){
-      carregarIframe(`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`);
-    } else {
-      carregarIframe(url);
-    }
-  } else if(formato === 'mp4' || formato === 'webm' || formato === 'ts'){
-    carregarVideoNativo(url);
-  } else if(formato === 'mkv' || formato === 'avi' || formato === 'mov' || formato === 'flv'){
-    // Tenta nativo primeiro; se falhar, cai no iframe
-    carregarVideoNativo(url);
-  } else if(formato === 'dash'){
-    // MPEG-DASH: tenta nativo
-    carregarVideoNativo(url);
-  } else {
-    // Formato desconhecido: tenta nativo primeiro, depois iframe
-    carregarVideoNativo(url);
-  }
+  playURL(url);
 
   // Eventos do vídeo → atualizar UI
-  video.ontimeupdate  = atualizarProgresso;
-  video.onplay        = ()=>{ atualizarBtnPlay(false); };
-  video.onpause       = ()=>{ atualizarBtnPlay(true); };
-  video.onwaiting     = ()=>{ mostrarVideoLoading(true); };
-  video.onplaying     = ()=>{ mostrarVideoLoading(false); };
-  video.onended       = ()=>{ atualizarBtnPlay(true); };
+  video.ontimeupdate     = atualizarProgresso;
+  video.onplay           = ()=>{ atualizarBtnPlay(false); };
+  video.onpause          = ()=>{ atualizarBtnPlay(true); };
+  video.onwaiting        = ()=>{ mostrarVideoLoading(true); };
+  video.onplaying        = ()=>{ mostrarVideoLoading(false); };
+  video.onended          = ()=>{ atualizarBtnPlay(true); };
   video.ondurationchange = atualizarProgresso;
   video.onvolumechange   = atualizarVolume;
 
@@ -4021,7 +4239,12 @@ let itemDetalheAtual = null;
 function abrirDetalhe(item){
   if(!item) return;
   itemDetalheAtual = item;
-  const modal = document.getElementById('detalheModal');
+  // Empurra na pilha de navegação
+  _navPush({ tipo: 'detalhe', item });
+  _renderDetalhe(item);
+}
+
+function _renderDetalhe(item){
   const img = document.getElementById('detalheHeroImg');
   if(img){ img.src = item.poster || ''; img.alt = item.titulo || ''; }
   const svgBadges={
@@ -4065,6 +4288,7 @@ function abrirDetalhe(item){
       relWrap.style.display='block';
     } else { relWrap.style.display='none'; }
   }
+  const modal = document.getElementById('detalheModal');
   if(modal){ modal.classList.add('show'); modal.scrollTop=0; }
   document.body.style.overflow='hidden';
 }
@@ -4072,6 +4296,10 @@ function fecharDetalhe(){
   const modal = document.getElementById('detalheModal');
   if(modal) modal.classList.remove('show');
   document.body.style.overflow='';
+  // Remove da pilha se o topo for um detalhe (quando fechado pelo botão X, não pelo popstate)
+  if(_navStack.length > 0 && _navStack[_navStack.length-1].tipo === 'detalhe'){
+    _navStack.pop();
+  }
 }
 function atualizarBotaoFavDetalhe(){
   if(!itemDetalheAtual) return;
