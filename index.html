@@ -619,7 +619,7 @@ body::after{
 .section-filtro-titulo{font-family:var(--font-display);font-size:clamp(24px,3.5vw,34px);letter-spacing:3px;margin-bottom:6px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff,rgba(255,255,255,.9));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-filtro-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
 .grid-filtro{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
-.grid-filtro.tv-grid{display:flex;flex-wrap:wrap;gap:14px}
+.grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .empty-state{padding:48px;text-align:center;color:var(--muted2);font-size:14px}
 
 /* MODAL INFO PREMIUM */
@@ -790,7 +790,7 @@ body::after{
   .header-center{position:static;transform:none}
   .banner{padding:40px 24px;height:65vh}.banner-title{font-size:52px}.banner-desc{display:none}.banner-meta{display:none}
   .row{padding:0 20px}.section-filtro{padding:24px 20px 80px}.grid-filtro{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-  .grid-filtro.tv-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow-y:auto}
   #searchResults{padding:20px 20px 80px}
   #drawer{width:280px}
   #appMain{padding-bottom:70px}
@@ -1813,8 +1813,8 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
         <div class="player-error-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div class="player-error-title">Não foi possível reproduzir</div>
-        <div class="player-error-sub">O link pode estar fora do ar ou indisponível no momento. Tente novamente mais tarde.</div>
+        <div class="player-error-title">Link expirado ou indisponível</div>
+        <div class="player-error-sub">Este link pode estar expirado ou fora do ar no momento. Tente outro canal ou volte mais tarde.</div>
         <button class="btn-reportar" onclick="reportarLinkQuebrado()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Reportar link quebrado</button>
       </div>
     </div>
@@ -1968,6 +1968,8 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
 <script>
 firebase.initializeApp({apiKey:"AIzaSyAyH7q3GOeFq5B_m8kDnxCJ0N14xYiBkEc",authDomain:"royal-streams-web.firebaseapp.com",projectId:"royal-streams-web",databaseURL:"https://royal-streams-web-default-rtdb.firebaseio.com",storageBucket:"royal-streams-web.firebasestorage.app",messagingSenderId:"239998986476",appId:"1:239998986476:web:8a2e9942aafa180bdcddc9",measurementId:"G-H74918T0SV"});
 const auth=firebase.auth(),db=firebase.firestore();
+// Persistência de login: mantém o usuário logado mesmo após fechar o app
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
 
 // ── PERSISTÊNCIA DE SESSÃO ──
 // Firebase já mantém o usuário logado automaticamente.
@@ -2129,6 +2131,9 @@ const tipoMap={filmes:'filme',series:'serie',animes:'anime',animestv:'anime_tv',
 function navegar(secao){
   fecharDrawer();
 
+  // Salvar seção anterior para o botão voltar
+  const secaoAnterior = document.body.dataset.secaoAtiva || 'inicio';
+
   // Esconder TODAS as páginas
   document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
 
@@ -2146,6 +2151,14 @@ function navegar(secao){
 
   // Guardar seção ativa
   document.body.dataset.secaoAtiva = secao;
+
+  // Atualizar histórico do navegador para o botão voltar do celular funcionar
+  if(secao !== 'inicio'){
+    history.pushState({ secao: secao }, '', '#' + secao);
+  } else {
+    history.pushState({ secao: 'inicio' }, '', '#inicio');
+  }
+  updateBottomNav(secao);
 
   // Se não é início, popular o grid da página
   if(secao !== 'inicio'){
@@ -2182,7 +2195,58 @@ function navegar(secao){
   }
 }
 
-// ── FILTRAR POR CATEGORIA/GÊNERO ──
+// ── BOTÃO VOLTAR DO CELULAR (popstate) ──
+// Intercepta o botão voltar para fechar modais/player antes de sair da seção
+window.addEventListener('popstate', function(e){
+  // 1. Fechar player aberto
+  const playerCont = document.getElementById('playerContainer');
+  if(playerCont && playerCont.classList.contains('show')){
+    fecharPlayer();
+    // Reempurra estado para não sair da seção
+    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
+    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
+    return;
+  }
+  // 2. Fechar detalhe aberto
+  const detalhe = document.getElementById('detalheModal');
+  if(detalhe && detalhe.classList.contains('show')){
+    fecharDetalhe();
+    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
+    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
+    return;
+  }
+  // 3. Fechar modal de info
+  const infoModal = document.getElementById('infoModal');
+  if(infoModal && infoModal.classList.contains('show')){
+    fecharModal();
+    const secaoAtual = document.body.dataset.secaoAtiva || 'inicio';
+    history.pushState({ secao: secaoAtual }, '', '#' + secaoAtual);
+    return;
+  }
+  // 4. Navegar para a seção do estado histórico
+  const secao = (e.state && e.state.secao) ? e.state.secao : 'inicio';
+  const paginaAlvo = document.getElementById('pagina-' + secao);
+  if(paginaAlvo || secao === 'inicio'){
+    // Restaura seção sem criar novo estado no histórico
+    document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
+    document.getElementById('searchResults').style.display = 'none';
+    if(secao === 'inicio'){
+      const paginaInicio = document.getElementById('pagina-inicio');
+      if(paginaInicio) paginaInicio.style.display = 'block';
+    } else if(paginaAlvo){
+      paginaAlvo.style.display = 'block';
+    }
+    document.body.dataset.secaoAtiva = secao;
+    updateBottomNav(secao);
+  }
+});
+
+// Inicializar estado do histórico para a página inicial
+document.addEventListener('DOMContentLoaded', function(){
+  history.replaceState({ secao: 'inicio' }, '', '#inicio');
+});
+
+
 function filtrarPorCategoria(cat,el){
   fecharDrawer();
   document.querySelectorAll('.drawer-cat-item').forEach(i=>i.classList.remove('active'));
@@ -2561,6 +2625,10 @@ async function carregarCatalogo(){
     }
   }));
 
+  // ── CARREGAR MÚLTIPLAS LISTAS M3U do painel admin ──
+  // Suporta coleções: 'listas', 'playlists', 'listas_m3u'
+  await carregarListasM3U(rows);
+
   if(rows.popular){
     rows.popular.querySelectorAll('.skeleton').forEach(s=>s.remove());
     if(rows.popular.innerHTML==='') rows.popular.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>';
@@ -2570,6 +2638,62 @@ async function carregarCatalogo(){
   renderizarRowFavoritos(); renderizarRowContinuar();
   document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
   hideLoading();
+}
+
+// ── Carrega TODAS as listas M3U importadas pelo admin ──
+async function carregarListasM3U(rows){
+  const possivelCols = ['listas', 'playlists', 'listas_m3u'];
+  for(const colName of possivelCols){
+    try{
+      const snap = await db.collection(colName).get();
+      if(snap.empty) continue;
+      console.log('[M3U] Encontrou '+snap.size+' lista(s) em "'+colName+'"');
+      // Processa todas as listas em paralelo
+      await Promise.allSettled(snap.docs.map(async doc=>{
+        const data = doc.data();
+        const url = data.url || data.link || data.m3u_url || data.playlist_url || data.m3u || '';
+        const textoM3U = data.conteudo || data.content || data.texto || '';
+        if(!url && !textoM3U) return;
+        try{
+          let canais = [];
+          if(textoM3U){
+            // Conteúdo já armazenado no Firestore
+            canais = parsearM3U(textoM3U);
+          } else if(url){
+            // Busca via proxy ou direto (pode falhar por CORS)
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            const r = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            const txt = await r.text();
+            canais = parsearM3U(txt);
+          }
+          console.log('[M3U] Lista "'+doc.id+'" → '+canais.length+' canal(is)');
+          canais.forEach((canal, idx)=>{
+            const {tipo, isTV} = detectarTipoPorGrupo(canal.grupo);
+            const item = normalizarItem({
+              id: 'm3u_' + doc.id + '_' + idx,
+              titulo: canal.nome,
+              poster: canal.logo,
+              player_url: canal.url,
+              categoria: canal.grupo,
+              tipo
+            }, tipo);
+            // Evitar duplicatas
+            if(todosConteudos.some(c=>c.player_url===item.player_url)) return;
+            todosConteudos.push(item);
+            const row = isTV ? rows.tv : (tipo==='filme'?rows.filmes:tipo==='serie'?rows.series:tipo==='anime'?rows.animes:rows.animestv);
+            if(row){ row.querySelectorAll('.empty-state').forEach(e=>e.remove()); criarPoster(item, row, isTV); }
+            if(!isTV && rows.popular) criarPoster(item, rows.popular, false);
+          });
+        }catch(err){
+          console.warn('[M3U] Erro ao processar lista "'+doc.id+'":', err.message);
+        }
+      }));
+      break; // Encontrou a coleção certa, para
+    }catch(e){
+      // Coleção não existe, tenta a próxima
+    }
+  }
 }
 function atualizarBanner(item){
   if(!item)return;
@@ -2699,7 +2823,154 @@ function extrairYouTubeID(url){
 // URL atual do player (para uso no Cast)
 let _currentPlayerURL = '';
 
+// ── SELETOR DE PLAYER (interno vs VLC) ──
+let _itemPendente = null;
 function abrirPlayer(item){
+  const url = typeof item==='string' ? item : item.player_url;
+  if(!url){ abrirAviso('Este conteúdo não possui uma URL de reprodução válida.','erro','Link inválido'); return; }
+  _itemPendente = item;
+  mostrarSeletorPlayer(item, url);
+}
+
+function mostrarSeletorPlayer(item, url){
+  const titulo = typeof item==='object' ? (item.titulo||'') : '';
+  let modal = document.getElementById('modalSeletorPlayer');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'modalSeletorPlayer';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:8500;justify-content:center;align-items:flex-end;padding:0;';
+    modal.innerHTML = `
+      <div id="seletorOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" onclick="fecharSeletorPlayer()"></div>
+      <div id="seletorSheet" style="
+        position:relative;z-index:1;width:100%;max-width:480px;margin:0 auto;
+        background:linear-gradient(180deg,#0d1022 0%,#080b16 100%);
+        border-radius:24px 24px 0 0;
+        border:1px solid rgba(201,162,39,.15);border-bottom:none;
+        padding:0 0 calc(20px + env(safe-area-inset-bottom));
+        box-shadow:0 -24px 80px rgba(0,0,0,.8);
+        animation:sheetUp .32s cubic-bezier(.16,1,.3,1);
+      ">
+        <div style="display:flex;justify-content:center;padding:14px 0 4px">
+          <div style="width:36px;height:4px;border-radius:4px;background:rgba(255,255,255,.15)"></div>
+        </div>
+        <div style="padding:16px 24px 20px;">
+          <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:rgba(201,162,39,.6);text-transform:uppercase;margin-bottom:6px">Reproduzir em</div>
+          <div id="seletorTitulo" style="font-size:15px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:20px"></div>
+
+          <!-- Botão Player Interno -->
+          <button id="btnPlayerInterno" onclick="confirmarPlayerInterno()" style="
+            width:100%;display:flex;align-items:center;gap:16px;padding:16px 18px;
+            background:linear-gradient(135deg,rgba(201,162,39,.12),rgba(201,162,39,.06));
+            border:1px solid rgba(201,162,39,.28);border-radius:16px;
+            color:#fff;cursor:pointer;transition:all .2s;margin-bottom:10px;text-align:left;
+          ">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#c9a227,#a07d14);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:3px;">Player Interno</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.45);font-weight:400;">Reproduzir dentro do Royal Streams</div>
+            </div>
+            <svg style="margin-left:auto;flex-shrink:0;color:rgba(201,162,39,.7)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <!-- Botão VLC -->
+          <button id="btnPlayerVLC" onclick="confirmarPlayerVLC()" style="
+            width:100%;display:flex;align-items:center;gap:16px;padding:16px 18px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.1);border-radius:16px;
+            color:#fff;cursor:pointer;transition:all .2s;text-align:left;
+          ">
+            <div style="width:44px;height:44px;border-radius:12px;background:#e47a11;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
+              <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
+                <ellipse cx="32" cy="32" rx="30" ry="30" fill="#e47a11"/>
+                <polygon points="24,18 48,32 24,46" fill="white"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:3px;">Player VLC</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.45);font-weight:400;">Abrir no VLC Media Player</div>
+            </div>
+            <svg style="margin-left:auto;flex-shrink:0;color:rgba(255,255,255,.25)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('seletorTitulo').textContent = titulo || 'Conteúdo selecionado';
+  modal.style.display = 'flex';
+}
+
+function fecharSeletorPlayer(){
+  const modal = document.getElementById('modalSeletorPlayer');
+  if(!modal) return;
+  const sheet = document.getElementById('seletorSheet');
+  if(sheet) sheet.style.animation = 'sheetDown .25s cubic-bezier(.4,0,1,1) forwards';
+  setTimeout(()=>{ modal.style.display='none'; if(sheet) sheet.style.animation=''; }, 230);
+}
+
+function confirmarPlayerInterno(){
+  fecharSeletorPlayer();
+  const item = _itemPendente;
+  _itemPendente = null;
+  if(!item) return;
+  // Pausar banner se estiver tocando
+  const banVid=document.getElementById('bannerVideo');
+  if(banVid&&!banVid.paused) banVid.pause();
+  // Salvar item atual
+  window._itemAtualPlayer = typeof item==='object' ? item : null;
+  _abrirPlayerReal(item);
+  // Restaurar timestamp
+  if(window._itemAtualPlayer && window._itemAtualPlayer.id){
+    const ts = typeof getTimestamp==='function' ? getTimestamp(window._itemAtualPlayer.id) : null;
+    if(ts && ts.time > 10){
+      const v = document.getElementById('player');
+      const tryRestore = ()=>{ if(v.readyState>=2&&v.duration){ v.currentTime=ts.time; } else { setTimeout(tryRestore,500); } };
+      setTimeout(tryRestore,1500);
+    }
+  }
+}
+
+function confirmarPlayerVLC(){
+  fecharSeletorPlayer();
+  const item = _itemPendente;
+  _itemPendente = null;
+  if(!item) return;
+  const url = typeof item==='string' ? item : item.player_url;
+  if(!url) return;
+  // Tenta abrir VLC via intent/deep link
+  const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
+  // Cria link temporário e tenta abrir
+  const link = document.createElement('a');
+  link.href = vlcUrl;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  // Após 1.5s, se ainda estiver na página, redireciona para Play Store
+  const fallbackTimer = setTimeout(()=>{
+    window.open('https://play.google.com/store/apps/details?id=org.videolan.vlc', '_blank');
+  }, 1500);
+  // Cancela o fallback se o app abriu (a aba fica em foco ao voltar)
+  window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once: true });
+}
+
+// Injeta animação sheetUp/sheetDown se não existir
+(function(){
+  if(!document.getElementById('sheetAnimStyle')){
+    const s = document.createElement('style');
+    s.id = 'sheetAnimStyle';
+    s.textContent = `
+      @keyframes sheetUp { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }
+      @keyframes sheetDown { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(100%); } }
+      #btnPlayerInterno:hover { background:linear-gradient(135deg,rgba(201,162,39,.22),rgba(201,162,39,.1)) !important; border-color:rgba(201,162,39,.5) !important; transform:translateY(-1px); }
+      #btnPlayerVLC:hover { background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.2) !important; transform:translateY(-1px); }
+    `;
+    document.head.appendChild(s);
+  }
+})();
+
+function _abrirPlayerReal(item){
   const url = typeof item==='string' ? item : item.player_url;
   if(!url){ abrirAviso('Este conteúdo não possui uma URL de reprodução válida.','erro','Link inválido'); return; }
 
@@ -2741,14 +3012,28 @@ function abrirPlayer(item){
     hlsInstance.attachMedia(video);
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
       mostrarVideoLoading(false);
-      video.play().catch(()=>{});
+      video.muted = false;
+      const playPromise = video.play();
+      if(playPromise !== undefined){
+        playPromise.catch(()=>{
+          // Autoplay bloqueado pelo navegador: tenta mudo depois
+          video.muted = true;
+          video.play().catch(()=>{});
+        });
+      }
     });
     hlsInstance.on(Hls.Events.ERROR, (_, data)=>{
       console.warn('[HLS.js] Erro:', data.type, data.details);
       if(data.fatal){
         mostrarVideoLoading(false);
         if(data.type === Hls.ErrorTypes.NETWORK_ERROR){
-          hlsInstance.startLoad();
+          // Tenta recuperar 1x; se falhar de novo, mostra erro de link expirado
+          if(!hlsInstance._retried){
+            hlsInstance._retried = true;
+            hlsInstance.startLoad();
+          } else {
+            mostrarErroPlayer();
+          }
         } else if(data.type === Hls.ErrorTypes.MEDIA_ERROR){
           hlsInstance.recoverMediaError();
         } else {
@@ -2778,7 +3063,12 @@ function abrirPlayer(item){
     video.style.display = 'block';
     document.getElementById('rspProgressWrap').style.display = '';
     video.src = src;
-    video.addEventListener('canplay', ()=>{ mostrarVideoLoading(false); video.play().catch(()=>{}); }, {once:true});
+    video.load();
+    video.addEventListener('canplay', ()=>{
+      mostrarVideoLoading(false);
+      const p = video.play();
+      if(p !== undefined) p.catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
+    }, {once:true});
     video.addEventListener('error', ()=>{
       mostrarVideoLoading(false);
       // Fallback para iframe se o formato nativo falhar
@@ -3830,24 +4120,12 @@ atualizarProgresso = function(){
   const v=document.getElementById('player');
   if(v&&v.currentTime>0&&_itemAtualPlayer) salvarTimestamp(_itemAtualPlayer.id,v.currentTime,v.duration);
 };
-// Restaurar posição ao abrir player
+// Restaurar posição ao abrir player — o timestamp é aplicado em confirmarPlayerInterno
 let _itemAtualPlayer = null;
 const _abrirPlayerOriginal = abrirPlayer;
 abrirPlayer = function(item){
   _itemAtualPlayer = typeof item==='object' ? item : null;
-  // Pausar vídeo do banner
-  const banVid=document.getElementById('bannerVideo');
-  if(banVid&&!banVid.paused) banVid.pause();
   _abrirPlayerOriginal(item);
-  // Restaurar timestamp
-  if(_itemAtualPlayer&&_itemAtualPlayer.id){
-    const ts=getTimestamp(_itemAtualPlayer.id);
-    if(ts&&ts.time>10){
-      const v=document.getElementById('player');
-      const tryRestore=()=>{ if(v.readyState>=2&&v.duration){ v.currentTime=ts.time; } else { setTimeout(tryRestore,500); } };
-      setTimeout(tryRestore,1500);
-    }
-  }
 };
 // Retomar banner ao fechar player
 const _fecharPlayerOriginal = fecharPlayer;
