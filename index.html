@@ -487,8 +487,7 @@ body::after{
    BANNER PREMIUM
 ══════════════════════════════ */
 .banner{height:88vh;min-height:500px;display:flex;align-items:flex-end;padding:80px 64px;position:relative;overflow:hidden;background:#080808}
-.banner-video-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%;z-index:0;opacity:0;transition:opacity 1.4s ease}
-.banner-video-bg.loaded{opacity:1}
+
 .banner-poster-bg{position:absolute;inset:0;background-size:cover;background-position:center 20%;z-index:0;transition:opacity .8s ease}
 .banner-gradient{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to right,rgba(8,8,8,.97) 0%,rgba(8,8,8,.55) 50%,rgba(8,8,8,.15) 100%),linear-gradient(to top,rgba(8,8,8,1) 0%,rgba(8,8,8,.1) 40%,transparent 100%)}
 .banner::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(8,8,8,1) 0%,transparent 32%);pointer-events:none}
@@ -1592,6 +1591,10 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
 <!-- HEADER -->
 <header id="appHeader">
   <div class="header-left">
+    <!-- Botão voltar — aparece quando não está no início -->
+    <button id="btnVoltar" onclick="_handleVoltar()" title="Voltar" style="display:none;background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;padding:6px;margin-right:2px;border-radius:8px;transition:color .2s,background .2s" onmouseenter="this.style.color='#fff';this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.color='rgba(255,255,255,.7)';this.style.background='none'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div class="hamburger" onclick="abrirDrawer()" title="Menu">
       <span></span><span></span><span></span>
     </div>
@@ -1652,9 +1655,6 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
   <!-- ══ PÁGINA: INÍCIO ══ -->
   <div id="pagina-inicio" class="pagina-aba">
     <div class="banner" id="bannerEl">
-      <video id="bannerVideo" class="banner-video-bg" autoplay muted loop playsinline preload="none">
-        <source src="https://i.imgur.com/5CWt0od.mp4" type="video/mp4">
-      </video>
       <div class="banner-poster-bg" id="bannerPosterBg"></div>
       <div class="banner-gradient"></div>
       <div class="banner-content">
@@ -1664,7 +1664,6 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
         <p class="banner-desc" id="bannerDescEl">Filmes, Séries, Animes e TV ao vivo em alta qualidade.</p>
         <div class="banner-btns">
           <button class="btn-play" onclick="playBanner()"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Assistir</button>
-          <button class="btn-info" onclick="infoBanner()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Mais info</button>
         </div>
       </div>
       <div class="banner-dots" id="bannerDots"></div>
@@ -1978,6 +1977,73 @@ const auth = firebase.auth();
 const rtdb = firebase.database();
 const analytics = firebase.analytics();
 
+// ── PERSISTÊNCIA DE LOGIN ──────────────────────────────────────────
+// Garante que o Firebase salva o login no localStorage do navegador.
+// Assim o usuário permanece logado após recarregar ou fechar a aba.
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => {
+  console.warn('[Auth] Persistence não suportada:', e);
+});
+
+// ── HISTÓRICO DE NAVEGAÇÃO ────────────────────────────────────────
+// Pilha que rastreia as seções visitadas para o botão voltar funcionar.
+const _navHistory = [];
+let _navIgnorePopstate = false;
+
+function _navPush(secao){
+  // Evita duplicar a mesma seção consecutiva
+  if(_navHistory.length && _navHistory[_navHistory.length-1] === secao) return;
+  _navHistory.push(secao);
+  // Sincroniza com o History API para funcionar com botão voltar do navegador
+  try{
+    history.pushState({ secao }, '', '#' + secao);
+  }catch(e){}
+}
+
+function _navBack(){
+  if(_navHistory.length <= 1){
+    // Está na primeira página — vai para início
+    _navHistory.length = 0;
+    navegar('inicio', true);
+    return;
+  }
+  _navHistory.pop(); // remove atual
+  const anterior = _navHistory[_navHistory.length - 1];
+  navegar(anterior, true); // navega sem empilhar novamente
+}
+
+// Intercepta botão voltar do navegador/dispositivo
+window.addEventListener('popstate', (e) => {
+  if(_navIgnorePopstate) return;
+  const secao = (e.state && e.state.secao) || 'inicio';
+  // Remove da pilha e navega sem empilhar
+  if(_navHistory.length > 0) _navHistory.pop();
+  navegar(secao, true);
+});
+
+// Botão voltar físico Android / swipe iOS — fecha modal se aberto, senão volta
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' || e.key === 'BrowserBack'){
+    _handleVoltar();
+  }
+});
+function _handleVoltar(){
+  // Prioridade: fechar modal/player/drawer antes de voltar de página
+  if(document.getElementById('playerContainer')?.classList.contains('show')){
+    fecharPlayer(); return;
+  }
+  if(document.getElementById('infoModal')?.classList.contains('show')){
+    fecharModal(); return;
+  }
+  if(document.getElementById('drawer')?.classList.contains('open')){
+    fecharDrawer(); return;
+  }
+  if(document.getElementById('searchResults')?.style.display === 'block'){
+    document.getElementById('searchInput') && (document.getElementById('searchInput').value = '');
+    buscar(''); return;
+  }
+  _navBack();
+}
+
 // ── Shim Firestore-like API sobre Realtime Database ──────────────
 // Todas as leituras/escritas vão para o Realtime DB no caminho correto.
 const db = (function(){
@@ -2271,8 +2337,15 @@ const svgTV=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke=
 const tipoLabels={filmes:`${svgFilme} Filmes`,series:`${svgSerie} Séries`,animes:`${svgAnime} Animes`,animestv:`${svgAnimeTV} Animes TV`,tv:`${svgTV} TV`};
 const tipoMap={filmes:'filme',series:'serie',animes:'anime',animestv:'anime_tv',tv:'tv'};
 
-function navegar(secao){
+function navegar(secao, _semEmpilhar){
   fecharDrawer();
+
+  // Empilha no histórico (exceto quando chamado internamente pelo voltar)
+  if(!_semEmpilhar) _navPush(secao);
+
+  // Mostra/esconde botão voltar no header
+  const btnVoltar = document.getElementById('btnVoltar');
+  if(btnVoltar) btnVoltar.style.display = (secao !== 'inicio') ? 'flex' : 'none';
 
   // Esconder TODAS as páginas
   document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
@@ -2284,10 +2357,11 @@ function navegar(secao){
   const pagina = document.getElementById('pagina-' + secao);
   if(pagina) pagina.style.display = 'block';
 
-  // Atualizar nav
+  // Atualizar nav drawer + bottom nav
   document.querySelectorAll('.drawer-item[id^="nav-"]').forEach(i => i.classList.remove('active'));
   const navEl = document.getElementById('nav-' + secao);
   if(navEl) navEl.classList.add('active');
+  updateBottomNav(secao);
 
   // Guardar seção ativa
   document.body.dataset.secaoAtiva = secao;
@@ -2495,6 +2569,9 @@ async function entrarPerfil(perfil){
   const avatar=typeof perfil==='object'?perfil.avatar:null;
   perfilAtual=nome;
   salvarPerfilLocal(nome, avatar);
+  // Reseta o histórico de navegação ao entrar em um perfil
+  _navHistory.length = 0;
+  _navPush('inicio');
   document.getElementById('perfilBox').style.display='none';
   document.getElementById('appHeader').style.display='flex';
   document.getElementById('appMain').style.display='block';
@@ -4077,9 +4154,6 @@ let _itemAtualPlayer = null;
 const _abrirPlayerOriginal = abrirPlayer;
 abrirPlayer = function(item){
   _itemAtualPlayer = typeof item==='object' ? item : null;
-  // Pausar vídeo do banner
-  const banVid=document.getElementById('bannerVideo');
-  if(banVid&&!banVid.paused) banVid.pause();
   _abrirPlayerOriginal(item);
   // Restaurar timestamp
   if(_itemAtualPlayer&&_itemAtualPlayer.id){
@@ -4096,8 +4170,6 @@ const _fecharPlayerOriginal = fecharPlayer;
 fecharPlayer = function(){
   _fecharPlayerOriginal();
   if(cinemaModeOn){ cinemaModeOn=false; const bg=document.getElementById('cinemaBg'); if(bg) bg.classList.remove('show'); }
-  const banVid=document.getElementById('bannerVideo');
-  if(banVid&&banVid.paused) banVid.play().catch(()=>{});
 };
 setInterval(atualizarProgressoPosters,5000);
 
@@ -4114,9 +4186,6 @@ function reportarLinkQuebrado(){
 document.addEventListener('DOMContentLoaded',()=>{
   const vid=document.getElementById('player');
   if(vid) vid.addEventListener('error',()=>{ if(_currentPlayerURL&&detectarFormatoURL(_currentPlayerURL)!=='hls') mostrarErroPlayer(); });
-  // Banner video fade in
-  const banVid=document.getElementById('bannerVideo');
-  if(banVid) banVid.addEventListener('canplay',()=>banVid.classList.add('loaded'),{once:true});
 });
 
 // ── NOTIFICAÇÃO DE VENCIMENTO ──
