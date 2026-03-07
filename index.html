@@ -616,7 +616,9 @@ body::after{
 .section-filtro-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
 .grid-filtro{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
 .grid-filtro.tv-grid{display:flex;flex-wrap:wrap;gap:14px}
-.grid-catalogo{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px}
+.grid-catalogo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;padding:8px 0}
+.grid-catalogo .poster-wrap{min-width:0;width:100%}
+.grid-catalogo .poster-wrap img{width:100%;height:auto;aspect-ratio:2/3;object-fit:cover}
 .card-item{background:#151515;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s}
 .card-item:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.6),0 0 0 1px rgba(201,162,39,.15)}
 .card-item img{width:100%;height:140px;object-fit:cover;display:block;transition:opacity .3s}
@@ -2317,12 +2319,8 @@ function navegar(secao){
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum conteúdo nesta categoria ainda</div>';
     } else {
       const isTV = tipo === 'tv';
-      if(isTV){
-        itens.forEach(item => criarPoster(item, grid, true));
-        grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
-      } else {
-        itens.forEach(item => criarCardItem(item, grid));
-      }
+      itens.forEach(item => criarPoster(item, grid, isTV));
+      grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
     }
   }
 }
