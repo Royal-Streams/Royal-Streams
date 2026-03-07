@@ -64,12 +64,13 @@ body::after{
 ::-webkit-scrollbar-thumb:hover{background:var(--gold)}
 
 /* ══════════════════════════════
-   PLAYER ROYAL STREAMS — PREMIUM
+   PLAYER ROYAL STREAMS — NOVO
 ══════════════════════════════ */
 #playerContainer{
   display:none;position:fixed;inset:0;z-index:8000;
-  background:rgba(3,4,10,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  justify-content:center;align-items:center;padding:20px;
+  background:rgba(0,0,0,.96);
+  justify-content:center;align-items:center;
+  padding:0;
   transition:background .3s;
 }
 #playerContainer.show{display:flex}
@@ -79,92 +80,96 @@ body::after{
 }
 
 #rsPlayer{
-  position:relative;width:min(900px,94vw);
-  background:linear-gradient(180deg,#0a0c18 0%,#06080f 100%);
-  border-radius:24px;overflow:hidden;
-  border:1px solid rgba(201,162,39,.15);
-  box-shadow:0 40px 120px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.03) inset,0 0 80px rgba(201,162,39,.04);
+  position:relative;
+  width:min(960px,100vw);
+  height:min(540px,56.25vw);
+  background:#000;
+  border-radius:0;
+  overflow:hidden;
   display:flex;flex-direction:column;
-  transition:width .35s cubic-bezier(.4,0,.2,1),height .35s cubic-bezier(.4,0,.2,1),border-radius .35s;
-  animation:playerIn .35s cubic-bezier(.16,1,.3,1);
+  animation:playerIn .3s cubic-bezier(.16,1,.3,1);
 }
-@keyframes playerIn{from{opacity:0;transform:scale(.94) translateY(20px)}to{opacity:1;transform:none}}
+@media(max-width:600px){
+  #rsPlayer{width:100vw;height:56.25vw}
+}
+@keyframes playerIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 
-/* HEADER */
+/* HEADER FLUTUANTE */
 .rsp-header{
-  display:flex;align-items:center;gap:12px;
-  padding:14px 18px;
-  background:linear-gradient(90deg,rgba(201,162,39,.08) 0%,rgba(8,10,22,.95) 40%);
-  border-bottom:1px solid rgba(201,162,39,.1);
-  flex-shrink:0;
+  position:absolute;top:0;left:0;right:0;z-index:10;
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;
+  background:linear-gradient(to bottom,rgba(0,0,0,.85) 0%,transparent 100%);
+  opacity:0;transition:opacity .3s;
 }
-.rsp-logo{font-family:var(--font-display);font-size:13px;letter-spacing:4px;flex-shrink:0;display:flex;gap:4px}
+#rsPlayer:hover .rsp-header{opacity:1}
+.rsp-logo{font-family:var(--font-display);font-size:12px;letter-spacing:4px;flex-shrink:0;display:flex;gap:4px}
 .rsp-logo-royal{background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.rsp-logo-streams{color:rgba(255,255,255,.6)}
+.rsp-logo-streams{color:rgba(255,255,255,.5)}
 .rsp-title-wrap{flex:1;overflow:hidden}
-.rsp-title{font-size:14px;font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
-.rsp-header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rsp-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsp-header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
 .rsp-btn-icon{
-  width:34px;height:34px;border-radius:50%;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-  color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .2s;flex-shrink:0;
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .2s;flex-shrink:0;backdrop-filter:blur(8px);
 }
-.rsp-btn-icon:hover{background:rgba(201,162,39,.15);border-color:rgba(201,162,39,.35);color:#fff}
-.rsp-btn-icon.rsp-close:hover{background:rgba(200,16,46,.25);border-color:rgba(200,16,46,.5)}
+.rsp-btn-icon:hover{background:rgba(201,162,39,.2);border-color:rgba(201,162,39,.4);color:#fff}
+.rsp-btn-icon.rsp-close:hover{background:rgba(200,16,46,.3);border-color:rgba(200,16,46,.6)}
 
-/* VÍDEO */
-.rsp-video-wrap{position:relative;width:100%;background:#000;aspect-ratio:16/9;flex-shrink:0}
+/* ÁREA DO VÍDEO */
+.rsp-video-wrap{position:relative;width:100%;height:100%;background:#000;flex:1}
 #player{width:100%;height:100%;display:block;object-fit:contain;background:#000}
 
 /* OVERLAY controles centrais */
 .rsp-overlay{
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  opacity:0;transition:opacity .25s;background:rgba(0,0,0,.3);
-  cursor:pointer;
+  opacity:0;transition:opacity .25s;background:rgba(0,0,0,.25);cursor:pointer;
 }
-.rsp-video-wrap:hover .rsp-overlay{opacity:1}
-.rsp-center-controls{display:flex;align-items:center;gap:24px}
+#rsPlayer:hover .rsp-overlay{opacity:1}
+.rsp-center-controls{display:flex;align-items:center;gap:20px}
 .rsp-play-btn{
-  width:68px;height:68px;border-radius:50%;
-  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);
-  border:none;color:#fff;display:flex;align-items:center;justify-content:center;
+  width:64px;height:64px;border-radius:50%;
+  background:rgba(201,162,39,.9);
+  border:none;color:#000;display:flex;align-items:center;justify-content:center;
   cursor:pointer;transition:all .2s;
-  box-shadow:0 8px 32px rgba(201,162,39,.45),0 0 0 8px rgba(201,162,39,.1);
+  box-shadow:0 8px 28px rgba(201,162,39,.5);
 }
-.rsp-play-btn:hover{transform:scale(1.1);box-shadow:0 12px 40px rgba(201,162,39,.6),0 0 0 12px rgba(201,162,39,.12)}
+.rsp-play-btn:hover{transform:scale(1.1);background:var(--gold);box-shadow:0 12px 36px rgba(201,162,39,.65)}
 .rsp-center-btn{
-  width:46px;height:46px;border-radius:50%;
-  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);
+  width:44px;height:44px;border-radius:50%;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.2);
   color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .2s;gap:2px;font-size:9px;font-weight:700;font-family:var(--font-body);
+  cursor:pointer;transition:all .2s;gap:2px;font-size:9px;font-weight:700;
   backdrop-filter:blur(8px);
 }
-.rsp-center-btn:hover{background:rgba(201,162,39,.25);border-color:rgba(201,162,39,.45);transform:scale(1.1)}
+.rsp-center-btn:hover{background:rgba(201,162,39,.3);border-color:rgba(201,162,39,.5);transform:scale(1.08)}
 
-/* Spinner de vídeo */
+/* Spinner */
 .rsp-video-loading{
   position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-  background:rgba(0,0,0,.5);z-index:5;
+  background:rgba(0,0,0,.4);z-index:5;pointer-events:none;
 }
 .rsp-video-loading.show{display:flex}
 .rsp-video-spinner{
-  width:44px;height:44px;border:3px solid rgba(201,162,39,.15);
+  width:42px;height:42px;border:3px solid rgba(201,162,39,.15);
   border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;
 }
 
-/* BARRA DE PROGRESSO */
+/* BARRA DE CONTROLES INFERIOR */
 .rsp-progress-wrap{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 18px 4px;flex-shrink:0;
+  position:absolute;bottom:48px;left:0;right:0;z-index:10;
+  display:flex;align-items:center;gap:10px;padding:0 16px;
+  opacity:0;transition:opacity .3s;
 }
-.rsp-time{font-size:11px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums;min-width:34px;font-family:var(--font-body)}
+#rsPlayer:hover .rsp-progress-wrap{opacity:1}
+.rsp-time{font-size:11px;color:rgba(255,255,255,.5);font-variant-numeric:tabular-nums;min-width:34px}
 .rsp-progress{
   flex:1;position:relative;height:4px;cursor:pointer;
-  display:flex;align-items:center;
-  padding:8px 0;margin:-8px 0;
+  display:flex;align-items:center;padding:8px 0;margin:-8px 0;
 }
-.rsp-progress-bg{position:absolute;inset:8px 0;background:rgba(255,255,255,.08);border-radius:4px}
+.rsp-progress-bg{position:absolute;inset:8px 0;background:rgba(255,255,255,.15);border-radius:4px}
 .rsp-progress-fill{
   position:absolute;top:8px;left:0;height:4px;width:0%;
   background:linear-gradient(to right,var(--gold-dark),var(--gold-light));border-radius:4px;
@@ -174,73 +179,64 @@ body::after{
   position:absolute;top:50%;left:0%;transform:translate(-50%,-50%);
   width:13px;height:13px;border-radius:50%;
   background:#fff;border:2px solid var(--gold);
-  box-shadow:0 0 10px rgba(201,162,39,.7);
+  box-shadow:0 0 8px rgba(201,162,39,.6);
   pointer-events:none;opacity:0;transition:opacity .2s;
 }
 .rsp-progress:hover .rsp-progress-thumb{opacity:1}
-.rsp-progress:hover .rsp-progress-bg{background:rgba(255,255,255,.15)}
+.rsp-progress:hover .rsp-progress-bg{background:rgba(255,255,255,.25)}
 .rsp-progress:hover .rsp-progress-fill{height:6px;top:7px}
 
-/* CONTROLES INFERIORES */
+/* BARRA INFERIOR */
 .rsp-controls{
+  position:absolute;bottom:0;left:0;right:0;z-index:10;
   display:flex;align-items:center;justify-content:space-between;
-  padding:8px 14px 14px;gap:8px;flex-shrink:0;
+  padding:8px 14px 10px;gap:8px;
+  background:linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 100%);
+  opacity:0;transition:opacity .3s;
 }
-.rsp-ctrl-left,.rsp-ctrl-right{display:flex;align-items:center;gap:6px;flex:1}
+#rsPlayer:hover .rsp-controls{opacity:1}
+.rsp-ctrl-left,.rsp-ctrl-right{display:flex;align-items:center;gap:4px;flex:1}
 .rsp-ctrl-right{justify-content:flex-end}
 .rsp-ctrl-center{flex-shrink:0}
-.rsp-brand{font-family:var(--font-display);font-size:11px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:.6}
-
+.rsp-brand{font-family:var(--font-display);font-size:10px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;opacity:.5}
 .rsp-ctrl-btn{
-  height:34px;padding:0 10px;border-radius:var(--radius-xs);
+  height:32px;padding:0 8px;border-radius:6px;
   background:transparent;border:1px solid transparent;
-  color:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;gap:6px;
-  cursor:pointer;transition:all .2s;font-size:13px;font-family:var(--font-body);font-weight:500;
-  white-space:nowrap;
+  color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;transition:all .2s;font-size:12px;font-weight:500;white-space:nowrap;
 }
-.rsp-ctrl-btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);color:#fff}
+.rsp-ctrl-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:#fff}
 .rsp-play-ctrl{color:#fff}
-
-/* Volume */
-.rsp-volume-wrap{display:flex;align-items:center;gap:6px}
+.rsp-volume-wrap{display:flex;align-items:center;gap:5px}
 .rsp-volume{
   -webkit-appearance:none;appearance:none;
-  width:70px;height:3px;background:rgba(255,255,255,.12);border-radius:3px;cursor:pointer;
-  outline:none;
+  width:65px;height:3px;background:rgba(255,255,255,.15);border-radius:3px;cursor:pointer;outline:none;
 }
-.rsp-volume::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid #fff;cursor:pointer}
-.rsp-volume::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--gold);border:none;cursor:pointer}
-.rsp-time-display{font-size:11px;color:rgba(255,255,255,.35);font-family:var(--font-body);font-variant-numeric:tabular-nums;white-space:nowrap}
-
-/* Chromecast */
-.rsp-cast-btn{
-  background:rgba(201,162,39,.07);border-color:rgba(201,162,39,.2);color:var(--gold);
-  padding:0 12px;
-}
-.rsp-cast-btn:hover{background:rgba(201,162,39,.18);border-color:rgba(201,162,39,.45);color:#fff}
+.rsp-volume::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--gold);border:2px solid #fff;cursor:pointer}
+.rsp-volume::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--gold);border:none;cursor:pointer}
+.rsp-time-display{font-size:11px;color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rsp-cast-btn{background:rgba(201,162,39,.07);border-color:rgba(201,162,39,.2);color:var(--gold);padding:0 10px}
+.rsp-cast-btn:hover{background:rgba(201,162,39,.2);border-color:rgba(201,162,39,.5);color:#fff}
 .rsp-cast-btn.casting{background:rgba(201,162,39,.2);border-color:var(--gold);color:#fff;animation:castPulse 2s ease-in-out infinite}
-@keyframes castPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.4)}50%{box-shadow:0 0 0 6px rgba(201,162,39,0)}}
-.rsp-cast-label{font-size:12px;font-weight:600;letter-spacing:.3px}
-
-/* Velocidade */
+@keyframes castPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.4)}50%{box-shadow:0 0 0 5px rgba(201,162,39,0)}}
+.rsp-cast-label{font-size:11px;font-weight:600}
 .rsp-speed-wrap{position:relative}
-.rsp-speed-btn{font-size:12px;font-weight:700;letter-spacing:.3px}
+.rsp-speed-btn{font-size:11px;font-weight:700}
 .rsp-speed-menu{
   display:none;position:absolute;bottom:calc(100% + 8px);right:0;
-  background:rgba(8,10,22,.99);border:1px solid rgba(201,162,39,.18);
-  border-radius:var(--radius-sm);min-width:140px;overflow:hidden;
-  box-shadow:0 16px 40px rgba(0,0,0,.9);z-index:10;
+  background:rgba(6,8,18,.98);border:1px solid rgba(201,162,39,.2);
+  border-radius:10px;min-width:130px;overflow:hidden;
+  box-shadow:0 16px 40px rgba(0,0,0,.9);z-index:20;
   animation:fadeUp .2s cubic-bezier(.16,1,.3,1);
 }
 .rsp-speed-menu.show{display:block}
-.rsp-speed-title{padding:10px 14px 6px;font-size:10px;font-weight:700;color:rgba(201,162,39,.7);letter-spacing:2px;text-transform:uppercase}
-.rsp-speed-opt{padding:10px 14px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;font-weight:500}
-.rsp-speed-opt:hover{background:rgba(201,162,39,.08);color:#fff;padding-left:20px}
+.rsp-speed-title{padding:9px 13px 5px;font-size:9px;font-weight:700;color:rgba(201,162,39,.7);letter-spacing:2px;text-transform:uppercase}
+.rsp-speed-opt{padding:9px 13px;font-size:12px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;font-weight:500}
+.rsp-speed-opt:hover{background:rgba(201,162,39,.1);color:#fff;padding-left:18px}
 .rsp-speed-active{color:var(--gold);font-weight:700}
-
 @media(max-width:600px){
   .rsp-cast-label,.rsp-speed-btn span,.rsp-time-display{display:none}
-  .rsp-volume{width:50px}
+  .rsp-volume{width:45px}
   .rsp-logo{display:none}
   .rsp-ctrl-center{display:none}
 }
@@ -618,10 +614,15 @@ body::after{
 .section-filtro.show{display:block}
 .section-filtro-titulo{font-family:var(--font-display);font-size:clamp(24px,3.5vw,34px);letter-spacing:3px;margin-bottom:6px;display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff,rgba(255,255,255,.9));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .section-filtro-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
-.grid-filtro{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
-.grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
-.grid-filtro .poster-wrap,.grid-filtro .tv-card{background:#1b1b1b;border-radius:10px;padding:5px;text-align:center}
-.grid-filtro .poster-wrap img,.grid-filtro .tv-card img{width:100%;border-radius:8px}
+.grid-filtro{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:18px}
+.grid-filtro.tv-grid{display:flex;flex-wrap:wrap;gap:14px}
+.grid-catalogo{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:8px}
+.card-item{background:#151515;border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s}
+.card-item:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.6),0 0 0 1px rgba(201,162,39,.15)}
+.card-item img{width:100%;height:140px;object-fit:cover;display:block;transition:opacity .3s}
+.card-item img[data-src]{opacity:.4}
+.card-item img:not([data-src]){opacity:1}
+.card-item span{display:block;padding:6px;font-size:13px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .empty-state{padding:48px;text-align:center;color:var(--muted2);font-size:14px}
 
 /* MODAL INFO PREMIUM */
@@ -791,8 +792,8 @@ body::after{
   #buscaInput{display:none}
   .header-center{position:static;transform:none}
   .banner{padding:40px 24px;height:65vh}.banner-title{font-size:52px}.banner-desc{display:none}.banner-meta{display:none}
-  .row{padding:0 20px}.section-filtro{padding:24px 20px 80px}.grid-filtro{grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
-  .grid-filtro.tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px;overflow-y:auto}
+  .row{padding:0 20px}.section-filtro{padding:24px 20px 80px}.grid-filtro{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .grid-filtro.tv-grid{display:flex;flex-wrap:wrap;gap:10px}
   #searchResults{padding:20px 20px 80px}
   #drawer{width:280px}
   #appMain{padding-bottom:70px}
@@ -1705,7 +1706,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <div class="section-filtro show">
       <div class="section-filtro-titulo">Filmes</div>
       <div class="section-filtro-sub" id="sub-filmes"></div>
-      <div class="grid-filtro" id="grid-filmes"></div>
+      <div class="grid-catalogo" id="grid-filmes"></div>
     </div>
   </div>
 
@@ -1714,7 +1715,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <div class="section-filtro show">
       <div class="section-filtro-titulo">Séries</div>
       <div class="section-filtro-sub" id="sub-series"></div>
-      <div class="grid-filtro" id="grid-series"></div>
+      <div class="grid-catalogo" id="grid-series"></div>
     </div>
   </div>
 
@@ -1723,7 +1724,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <div class="section-filtro show">
       <div class="section-filtro-titulo">Animes</div>
       <div class="section-filtro-sub" id="sub-animes"></div>
-      <div class="grid-filtro" id="grid-animes"></div>
+      <div class="grid-catalogo" id="grid-animes"></div>
     </div>
   </div>
 
@@ -1732,7 +1733,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <div class="section-filtro show">
       <div class="section-filtro-titulo">Animes TV</div>
       <div class="section-filtro-sub" id="sub-animestv"></div>
-      <div class="grid-filtro" id="grid-animestv"></div>
+      <div class="grid-catalogo" id="grid-animestv"></div>
     </div>
   </div>
 
@@ -1750,7 +1751,7 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <div class="section-filtro show">
       <div class="section-filtro-titulo" style="display:flex;align-items:center;gap:12px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Meus Favoritos</div>
       <div class="section-filtro-sub" id="sub-favoritos"></div>
-      <div class="grid-filtro" id="grid-favoritos"></div>
+      <div class="grid-catalogo" id="grid-favoritos"></div>
     </div>
   </div>
 
@@ -1764,12 +1765,13 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
 <!-- PLAYER ROYAL STREAMS -->
 <div id="playerContainer">
   <div id="rsPlayer">
-    <!-- Cabeçalho do player -->
+
+    <!-- Cabeçalho flutuante -->
     <div class="rsp-header" id="rspHeader">
       <div class="rsp-logo">
         <span class="rsp-logo-royal">ROYAL</span><span class="rsp-logo-streams">STREAMS</span>
       </div>
-      <div class="rsp-title-wrap" style="display:none!important;visibility:hidden!important">
+      <div class="rsp-title-wrap">
         <span class="rsp-title" id="playerTitulo"></span>
       </div>
       <div class="rsp-header-actions">
@@ -1777,10 +1779,10 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         </button>
         <button class="rsp-btn-icon" id="rspExpandBtn" onclick="toggleExpandPlayer()" title="Expandir / Reduzir">
-          <svg id="rspExpandIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <svg id="rspExpandIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
         </button>
         <button class="rsp-btn-icon rsp-close" onclick="fecharPlayer()" title="Fechar player">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
     </div>
@@ -1793,31 +1795,35 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
       <div class="rsp-overlay" id="rspOverlay">
         <div class="rsp-center-controls">
           <button class="rsp-center-btn" onclick="skipTime(-10)" title="Voltar 10s">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
             <span>10</span>
           </button>
           <button class="rsp-play-btn" id="rspPlayBtn" onclick="togglePlay()">
-            <svg id="rspPlayIcon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <svg id="rspPlayIcon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
           <button class="rsp-center-btn" onclick="skipTime(10)" title="Avançar 10s">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.5"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.5"/></svg>
             <span>10</span>
           </button>
         </div>
       </div>
 
-      <!-- Spinner de carregamento do vídeo -->
+      <!-- Spinner -->
       <div class="rsp-video-loading" id="rspVideoLoading">
         <div class="rsp-video-spinner"></div>
       </div>
+
       <!-- Erro de link -->
       <div id="playerErrorMsg">
         <div class="player-error-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div class="player-error-title">Link expirado ou indisponível</div>
-        <div class="player-error-sub">Este link pode estar expirado ou fora do ar no momento. Tente outro canal ou volte mais tarde.</div>
-        <button class="btn-reportar" onclick="reportarLinkQuebrado()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> Reportar link quebrado</button>
+        <div class="player-error-title">Não foi possível reproduzir</div>
+        <div class="player-error-sub">O link pode estar fora do ar ou indisponível no momento.</div>
+        <button class="btn-reportar" onclick="reportarLinkQuebrado()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Reportar link quebrado
+        </button>
       </div>
     </div>
 
@@ -1832,47 +1838,31 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
       <span class="rsp-time" id="rspTimeDuration">0:00</span>
     </div>
 
-    <!-- Barra de controles inferior -->
+    <!-- Controles inferiores -->
     <div class="rsp-controls" id="rspControls">
-      <!-- Esquerda -->
       <div class="rsp-ctrl-left">
         <button class="rsp-ctrl-btn rsp-play-ctrl" onclick="togglePlay()" title="Play/Pause">
-          <svg id="rspPlayCtrlIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <svg id="rspPlayCtrlIcon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </button>
         <div class="rsp-volume-wrap">
           <button class="rsp-ctrl-btn" onclick="toggleMute()" title="Mudo" id="rspMuteBtn">
-            <svg id="rspVolIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <svg id="rspVolIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
           </button>
           <input class="rsp-volume" id="rspVolume" type="range" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)" title="Volume">
         </div>
         <span class="rsp-time-display" id="rspTimeDisplay">0:00 / 0:00</span>
       </div>
-
-      <!-- Centro: brand -->
       <div class="rsp-ctrl-center">
-        <span class="rsp-brand">
-          <span style="style="background:linear-gradient(135deg,#e8c456,#c9a227);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">ROYAL</span> STREAMS
-        </span>
+        <span class="rsp-brand">ROYAL STREAMS</span>
       </div>
-
-      <!-- Direita -->
       <div class="rsp-ctrl-right">
-        <!-- Chromecast -->
-        <button class="rsp-ctrl-btn rsp-cast-btn" id="rspCastBtn" onclick="iniciarCast()" title="Espelhar para TV / Chromecast">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 8.5A12.5 12.5 0 0 1 14.5 21"/>
-            <path d="M2 13A8 8 0 0 1 10 21"/>
-            <path d="M2 18a3 3 0 0 1 3 3"/>
-            <rect x="14" y="3" width="8" height="12" rx="2"/>
-            <path d="M14 19h8"/>
-          </svg>
+        <button class="rsp-ctrl-btn rsp-cast-btn" id="rspCastBtn" onclick="iniciarCast()" title="Espelhar para TV">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5A12.5 12.5 0 0 1 14.5 21"/><path d="M2 13A8 8 0 0 1 10 21"/><path d="M2 18a3 3 0 0 1 3 3"/><rect x="14" y="3" width="8" height="12" rx="2"/><path d="M14 19h8"/></svg>
           <span class="rsp-cast-label">Espelhar</span>
         </button>
-
-        <!-- Velocidade -->
         <div class="rsp-speed-wrap">
           <button class="rsp-ctrl-btn rsp-speed-btn" id="rspSpeedBtn" onclick="toggleSpeedMenu()" title="Velocidade">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span id="rspSpeedLabel">1×</span>
           </button>
           <div class="rsp-speed-menu" id="rspSpeedMenu">
@@ -1885,18 +1875,16 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
             <div class="rsp-speed-opt" onclick="setSpeed(2)">2×</div>
           </div>
         </div>
-
-        <!-- Modo Cinema -->
         <button class="rsp-ctrl-btn rsp-cinema-btn" onclick="toggleCinema()" title="Modo Cinema" id="rspCinemaBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
-          <span style="font-size:11px;font-weight:600">Cinema</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          <span style="font-size:10px;font-weight:600">Cinema</span>
         </button>
-        <!-- Tela cheia nativa -->
         <button class="rsp-ctrl-btn" onclick="toggleFullscreen()" title="Tela cheia" id="rspFsBtn">
-          <svg id="rspFsIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+          <svg id="rspFsIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
         </button>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -1970,120 +1958,6 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
 <script>
 firebase.initializeApp({apiKey:"AIzaSyAyH7q3GOeFq5B_m8kDnxCJ0N14xYiBkEc",authDomain:"royal-streams-web.firebaseapp.com",projectId:"royal-streams-web",databaseURL:"https://royal-streams-web-default-rtdb.firebaseio.com",storageBucket:"royal-streams-web.firebasestorage.app",messagingSenderId:"239998986476",appId:"1:239998986476:web:8a2e9942aafa180bdcddc9",measurementId:"G-H74918T0SV"});
 const auth=firebase.auth(),db=firebase.firestore();
-// Persistência de login: mantém o usuário logado mesmo após fechar o app
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
-
-// ══════════════════════════════════════════════════════════
-// SERVICE WORKER INLINE — cache shell do app para offline
-// ══════════════════════════════════════════════════════════
-(function(){
-  if(!('serviceWorker' in navigator)) return;
-  const swCode = `
-const CACHE='royal-v2';
-const SHELL=['/'];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL).catch(()=>{})));
-  self.skipWaiting();
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
-});
-self.addEventListener('fetch',e=>{
-  const url=e.request.url;
-  // Não cacheia Firestore, Firebase Auth nem APIs externas
-  if(url.includes('firestore.googleapis.com')||url.includes('firebase')||url.includes('googleapis.com')) return;
-  e.respondWith(
-    caches.match(e.request).then(cached=>{
-      const net=fetch(e.request).then(res=>{
-        if(res&&res.status===200&&e.request.method==='GET'){
-          const clone=res.clone();
-          caches.open(CACHE).then(c=>c.put(e.request,clone));
-        }
-        return res;
-      }).catch(()=>cached);
-      return cached||net;
-    })
-  );
-});`;
-  const blob = new Blob([swCode],{type:'text/javascript'});
-  const swURL = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swURL).then(()=>console.log('[SW] Registrado')).catch(()=>{});
-})();
-
-// ══════════════════════════════════════════════════════════
-// CACHE IndexedDB — armazena os conteúdos do Firebase
-// para carregamento instantâneo mesmo sem internet
-// ══════════════════════════════════════════════════════════
-const IDB_NAME  = 'royalDB';
-const IDB_VER   = 2;
-const IDB_STORE = 'catalogo';
-const IDB_CACHE_TTL = 15 * 60 * 1000; // 15 minutos
-
-let _idb = null;
-
-function _abrirIDB(){
-  return new Promise((res,rej)=>{
-    if(_idb){ res(_idb); return; }
-    const req = indexedDB.open(IDB_NAME, IDB_VER);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if(!d.objectStoreNames.contains(IDB_STORE))
-        d.createObjectStore(IDB_STORE, {keyPath:'chave'});
-    };
-    req.onsuccess = e => { _idb = e.target.result; res(_idb); };
-    req.onerror   = () => rej(req.error);
-  });
-}
-
-async function idbGet(chave){
-  try{
-    const d = await _abrirIDB();
-    return new Promise((res,rej)=>{
-      const tx  = d.transaction(IDB_STORE,'readonly');
-      const req = tx.objectStore(IDB_STORE).get(chave);
-      req.onsuccess = ()=>res(req.result||null);
-      req.onerror   = ()=>rej(req.error);
-    });
-  }catch(e){ return null; }
-}
-
-async function idbSet(chave, valor){
-  try{
-    const d = await _abrirIDB();
-    return new Promise((res,rej)=>{
-      const tx  = d.transaction(IDB_STORE,'readwrite');
-      const req = tx.objectStore(IDB_STORE).put({chave, valor, ts: Date.now()});
-      req.onsuccess = ()=>res(true);
-      req.onerror   = ()=>rej(req.error);
-    });
-  }catch(e){ return false; }
-}
-
-async function idbDel(chave){
-  try{
-    const d = await _abrirIDB();
-    return new Promise((res)=>{
-      const tx = d.transaction(IDB_STORE,'readwrite');
-      tx.objectStore(IDB_STORE).delete(chave);
-      tx.oncomplete = ()=>res(true);
-    });
-  }catch(e){ return false; }
-}
-
-// Verifica se o cache ainda é válido (dentro do TTL)
-function idbCacheValido(entry){
-  if(!entry) return false;
-  return (Date.now() - entry.ts) < IDB_CACHE_TTL;
-}
-
-// Limpa o cache (usado quando forçar atualização)
-async function limparCacheConteudo(){
-  await idbDel('catalogo_principal');
-  console.log('[Cache] Cache de conteúdo limpo');
-}
-
-
 
 // ── PERSISTÊNCIA DE SESSÃO ──
 // Firebase já mantém o usuário logado automaticamente.
@@ -2242,147 +2116,69 @@ const svgTV=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke=
 const tipoLabels={filmes:`${svgFilme} Filmes`,series:`${svgSerie} Séries`,animes:`${svgAnime} Animes`,animestv:`${svgAnimeTV} Animes TV`,tv:`${svgTV} TV ao Vivo`};
 const tipoMap={filmes:'filme',series:'serie',animes:'anime',animestv:'anime_tv',tv:'tv'};
 
-// ══════════════════════════════════════════════════════════════
-// SISTEMA DE HISTÓRICO DE NAVEGAÇÃO PROFUNDO
-// Pilha interna: início → seção → série → temporada → episódio
-// O botão físico/virtual "voltar" sempre desfaz um passo por vez
-// ══════════════════════════════════════════════════════════════
-
-const _navStack = []; // cada entry: { tipo, payload }
-let   _navLock  = false; // evita recursão durante restauração
-
-// ── Empurra um estado novo e cria entrada real no history API ──
-function _navPush(state){
-  _navStack.push(state);
-  history.pushState({ _rs: true, idx: _navStack.length - 1 }, '', location.pathname + location.search + '#rs' + _navStack.length);
-}
-
-// ── Intercepta o botão voltar do navegador / celular ──
-window.addEventListener('popstate', function(){
-  if(_navLock) return;
-  _processarVoltar();
-});
-
-function _processarVoltar(){
-  // Prioridade 1 — player aberto
-  const playerCont = document.getElementById('playerContainer');
-  if(playerCont && playerCont.classList.contains('show')){
-    fecharPlayer();
-    // Reempurra para manter nosso estado na fila do browser
-    history.pushState({ _rs:true, idx: _navStack.length }, '', location.pathname + '#rs' + (_navStack.length+1));
-    return;
-  }
-
-  // Prioridade 2 — seletor de player aberto
-  const seletor = document.getElementById('modalSeletorPlayer');
-  if(seletor && seletor.style.display !== 'none'){
-    fecharSeletorPlayer();
-    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
-    return;
-  }
-
-  // Prioridade 3 — tela de detalhe aberta (série/filme/anime etc.)
-  const detalhe = document.getElementById('detalheModal');
-  if(detalhe && detalhe.classList.contains('show')){
-    fecharDetalhe();
-    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
-    return;
-  }
-
-  // Prioridade 4 — modal info antigo
-  const infoModal = document.getElementById('infoModal');
-  if(infoModal && infoModal.classList.contains('show')){
-    fecharModal();
-    history.pushState({ _rs:true }, '', location.pathname + '#rs' + (_navStack.length+1));
-    return;
-  }
-
-  // Prioridade 5 — volta pela pilha de navegação
-  if(_navStack.length > 1){
-    _navStack.pop();                                    // descarta estado atual
-    const anterior = _navStack[_navStack.length - 1];  // estado anterior
-    _navLock = true;
-    _restaurarEstado(anterior);
-    _navLock = false;
-    history.pushState({ _rs:true, idx: _navStack.length-1 }, '', location.pathname + '#rs' + _navStack.length);
-    return;
-  }
-
-  // Raiz — não sai do app, mantém o estado inicial
-  history.pushState({ _rs:true, idx:0 }, '', location.pathname + '#inicio');
-}
-
-// ── Restaura o estado visualmente sem empurrar na pilha novamente ──
-function _restaurarEstado(state){
-  if(!state) return;
-  switch(state.tipo){
-    case 'inicio':  _renderInicio();              break;
-    case 'secao':   _renderSecao(state.secao);    break;
-    case 'detalhe': if(state.item) { const d=document.getElementById('detalheModal'); if(d) d.classList.add('show'); } break;
-    case 'temporada': /* temporadas ficam abertas dentro do detalhe — não precisa restaurar separadamente */ break;
-  }
-}
-
-function _renderInicio(){
-  document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
-  const el = document.getElementById('searchResults'); if(el) el.style.display = 'none';
-  const pi = document.getElementById('pagina-inicio'); if(pi) pi.style.display = 'block';
-  document.body.dataset.secaoAtiva = 'inicio';
-  if(typeof updateBottomNav === 'function') updateBottomNav('inicio');
-}
-
-// Inicializar com estado raiz
-document.addEventListener('DOMContentLoaded', function(){
-  _navStack.push({ tipo: 'inicio' });
-  history.replaceState({ _rs:true, idx:0 }, '', location.pathname + '#inicio');
-});
-
-// ── navegar(secao): chamado pelos botões do menu ──
 function navegar(secao){
   fecharDrawer();
-  _navPush({ tipo: 'secao', secao });
-  _renderSecao(secao);
-}
 
-function _renderSecao(secao){
+  // Esconder TODAS as páginas
   document.querySelectorAll('.pagina-aba').forEach(p => p.style.display = 'none');
-  const sr = document.getElementById('searchResults'); if(sr) sr.style.display = 'none';
 
+  // Esconder busca
+  document.getElementById('searchResults').style.display = 'none';
+
+  // Mostrar só a página da seção
   const pagina = document.getElementById('pagina-' + secao);
   if(pagina) pagina.style.display = 'block';
 
+  // Atualizar nav
   document.querySelectorAll('.drawer-item[id^="nav-"]').forEach(i => i.classList.remove('active'));
   const navEl = document.getElementById('nav-' + secao);
   if(navEl) navEl.classList.add('active');
 
+  // Guardar seção ativa
   document.body.dataset.secaoAtiva = secao;
-  if(typeof updateBottomNav === 'function') updateBottomNav(secao);
 
-  if(secao === 'inicio') return;
+  // Se não é início, popular o grid da página
+  if(secao !== 'inicio'){
+    const tipo = tipoMap[secao];
+    const gridId = 'grid-' + secao;
+    const subId  = 'sub-'  + secao;
+    const grid   = document.getElementById(gridId);
+    const sub    = document.getElementById(subId);
+    if(!grid) return;
 
-  const tipo   = tipoMap[secao];
-  const grid   = document.getElementById('grid-' + secao);
-  const sub    = document.getElementById('sub-'  + secao);
-  if(!grid) return;
+    if(secao === 'favoritos'){
+      const itens = favoritosAtual || [];
+      if(sub) sub.textContent = itens.length + ' título' + (itens.length !== 1 ? 's' : '') + ' favoritado' + (itens.length !== 1 ? 's' : '');
+      grid.innerHTML = '';
+      if(itens.length === 0){
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum favorito ainda</div>';
+      } else {
+        itens.forEach(item => {
+          if(item.tipo==='tv') criarPoster(item,grid,true);
+          else criarCardItem(item,grid);
+        });
+      }
+      return;
+    }
 
-  if(secao === 'favoritos'){
-    const itens = favoritosAtual || [];
-    if(sub) sub.textContent = itens.length + ' título' + (itens.length!==1?'s':'') + ' favoritado' + (itens.length!==1?'s':'');
+    const itens = todosConteudos.filter(c => c.tipo === tipo);
+    if(sub) sub.textContent = itens.length + ' título' + (itens.length !== 1 ? 's' : '');
     grid.innerHTML = '';
-    if(!itens.length) grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum favorito ainda</div>';
-    else { itens.forEach(item => criarPoster(item,grid,item.tipo==='tv')); grid.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*30)); }
-    return;
+    if(itens.length === 0){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum conteúdo nesta categoria ainda</div>';
+    } else {
+      const isTV = tipo === 'tv';
+      if(isTV){
+        itens.forEach(item => criarPoster(item, grid, true));
+        grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
+      } else {
+        itens.forEach(item => criarCardItem(item, grid));
+      }
+    }
   }
-
-  const itens = todosConteudos.filter(c => c.tipo === tipo);
-  if(sub) sub.textContent = itens.length + ' título' + (itens.length!==1?'s':'');
-  grid.innerHTML = '';
-  if(!itens.length) grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum conteúdo nesta categoria ainda</div>';
-  else { const isTV = tipo==='tv'; itens.forEach(item=>criarPoster(item,grid,isTV)); grid.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*30)); }
 }
 
-
-
+// ── FILTRAR POR CATEGORIA/GÊNERO ──
 function filtrarPorCategoria(cat,el){
   fecharDrawer();
   document.querySelectorAll('.drawer-cat-item').forEach(i=>i.classList.remove('active'));
@@ -2734,51 +2530,7 @@ async function carregarCatalogo(){
   };
   Object.values(rows).forEach((r,i)=>{if(r){r.innerHTML='';criarSkeletons(r,i===5?4:6,i===5)}});
 
-  // ── Tenta carregar do cache IndexedDB primeiro ──
-  const cacheEntry = await idbGet('catalogo_principal');
-  if(idbCacheValido(cacheEntry) && cacheEntry.valor && cacheEntry.valor.length > 0){
-    console.log('[Cache] Carregando '+cacheEntry.valor.length+' itens do IndexedDB');
-    _renderizarConteudos(cacheEntry.valor, rows);
-    hideLoading();
-    // Atualiza em background sem bloquear a UI
-    _atualizarCatalogoBackground(rows);
-    return;
-  }
-
-  // ── Sem cache válido: carrega do Firebase ──
-  await _fetchCatalogoFirebase(rows);
-  hideLoading();
-}
-
-// Renderiza conteúdos já carregados (do cache ou do Firebase)
-function _renderizarConteudos(itens, rows){
-  todosConteudos = itens;
-  Object.values(rows).forEach(r=>{ if(r){ r.innerHTML=''; } });
-
-  itens.forEach(item=>{
-    const isTV = item.tipo==='tv';
-    const row = isTV ? rows.tv :
-      (item.tipo==='filme' ? rows.filmes :
-       item.tipo==='serie' ? rows.series :
-       item.tipo==='anime' ? rows.animes :
-       item.tipo==='anime_tv' ? rows.animestv : null);
-    if(row){ criarPoster(item, row, isTV); }
-    if(!isTV && rows.popular) criarPoster(item, rows.popular, false);
-  });
-
-  Object.entries(rows).forEach(([k,r])=>{
-    if(r && r.innerHTML===''){ r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>'; }
-  });
-
-  const comPoster = itens.filter(c=>c.poster&&c.tipo!=='tv');
-  if(comPoster.length>0){ bannerData=comPoster[Math.floor(Math.random()*Math.min(comPoster.length,5))]; atualizarBanner(bannerData); }
-  renderizarRowFavoritos(); renderizarRowContinuar();
-  document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
-}
-
-// Busca no Firebase e salva no IndexedDB
-async function _fetchCatalogoFirebase(rows){
-  todosConteudos = [];
+  // Todas as coleções, incluindo TV diretamente do Firestore
   const cols=[
     {n:'filmes',    t:'filme',    r:rows.filmes,   isTV:false},
     {n:'series',    t:'serie',    r:rows.series,   isTV:false},
@@ -2805,9 +2557,6 @@ async function _fetchCatalogoFirebase(rows){
     }
   }));
 
-  // Carrega listas M3U do admin
-  await carregarListasM3U(rows);
-
   if(rows.popular){
     rows.popular.querySelectorAll('.skeleton').forEach(s=>s.remove());
     if(rows.popular.innerHTML==='') rows.popular.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>';
@@ -2816,79 +2565,7 @@ async function _fetchCatalogoFirebase(rows){
   if(comPoster.length>0){bannerData=comPoster[Math.floor(Math.random()*Math.min(comPoster.length,5))];atualizarBanner(bannerData);}
   renderizarRowFavoritos(); renderizarRowContinuar();
   document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
-
-  // Salva no cache IndexedDB
-  if(todosConteudos.length > 0){
-    await idbSet('catalogo_principal', todosConteudos);
-    console.log('[Cache] '+todosConteudos.length+' itens salvos no IndexedDB');
-  }
-}
-
-// Atualização silenciosa em background (não bloqueia a UI)
-async function _atualizarCatalogoBackground(rows){
-  console.log('[Cache] Atualizando catálogo em background...');
-  try{
-    await _fetchCatalogoFirebase(rows);
-    console.log('[Cache] Catálogo atualizado em background');
-  }catch(e){
-    console.warn('[Cache] Falha ao atualizar em background:', e.message);
-  }
-}
-
-// ── Carrega TODAS as listas M3U importadas pelo admin ──
-async function carregarListasM3U(rows){
-  const possivelCols = ['listas', 'playlists', 'listas_m3u'];
-  for(const colName of possivelCols){
-    try{
-      const snap = await db.collection(colName).get();
-      if(snap.empty) continue;
-      console.log('[M3U] Encontrou '+snap.size+' lista(s) em "'+colName+'"');
-      // Processa todas as listas em paralelo
-      await Promise.allSettled(snap.docs.map(async doc=>{
-        const data = doc.data();
-        const url = data.url || data.link || data.m3u_url || data.playlist_url || data.m3u || '';
-        const textoM3U = data.conteudo || data.content || data.texto || '';
-        if(!url && !textoM3U) return;
-        try{
-          let canais = [];
-          if(textoM3U){
-            // Conteúdo já armazenado no Firestore
-            canais = parsearM3U(textoM3U);
-          } else if(url){
-            // Busca via proxy ou direto (pode falhar por CORS)
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            const r = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
-            if(!r.ok) throw new Error('HTTP '+r.status);
-            const txt = await r.text();
-            canais = parsearM3U(txt);
-          }
-          console.log('[M3U] Lista "'+doc.id+'" → '+canais.length+' canal(is)');
-          canais.forEach((canal, idx)=>{
-            const {tipo, isTV} = detectarTipoPorGrupo(canal.grupo);
-            const item = normalizarItem({
-              id: 'm3u_' + doc.id + '_' + idx,
-              titulo: canal.nome,
-              poster: canal.logo,
-              player_url: canal.url,
-              categoria: canal.grupo,
-              tipo
-            }, tipo);
-            // Evitar duplicatas
-            if(todosConteudos.some(c=>c.player_url===item.player_url)) return;
-            todosConteudos.push(item);
-            const row = isTV ? rows.tv : (tipo==='filme'?rows.filmes:tipo==='serie'?rows.series:tipo==='anime'?rows.animes:rows.animestv);
-            if(row){ row.querySelectorAll('.empty-state').forEach(e=>e.remove()); criarPoster(item, row, isTV); }
-            if(!isTV && rows.popular) criarPoster(item, rows.popular, false);
-          });
-        }catch(err){
-          console.warn('[M3U] Erro ao processar lista "'+doc.id+'":', err.message);
-        }
-      }));
-      break; // Encontrou a coleção certa, para
-    }catch(e){
-      // Coleção não existe, tenta a próxima
-    }
-  }
+  hideLoading();
 }
 function atualizarBanner(item){
   if(!item)return;
@@ -2901,6 +2578,15 @@ function atualizarBanner(item){
   const metaEl=document.getElementById('bannerMetaEl');
   if(metaEl){const parts=[];if(item.ano)parts.push(item.ano);if(item.qualidade)parts.push(item.qualidade);metaEl.innerHTML=parts.map((p,i)=>`${i>0?'<span class="banner-meta-dot"></span>':''}<span class="banner-meta-item">${p}</span>`).join('')}
 }
+function criarCardItem(item,container){
+  const card=document.createElement('div');
+  card.className='card-item';
+  const poster=item.poster||'https://via.placeholder.com/300x130/151515/444?text=+';
+  card.innerHTML=`<img src="${poster}" alt="${item.titulo||''}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x130/151515/444?text=+'"><span>${item.titulo||'Sem título'}</span>`;
+  card.addEventListener('click',()=>abrirModal(item));
+  container.appendChild(card);
+}
+
 function criarPoster(item,container,isTV=false){
   const wrap=document.createElement('div');
   wrap.className='poster-wrap'+(isTV?' tv-card':'');
@@ -3018,199 +2704,7 @@ function extrairYouTubeID(url){
 // URL atual do player (para uso no Cast)
 let _currentPlayerURL = '';
 
-// ── SELETOR DE PLAYER (interno vs VLC) ──
-let _itemPendente = null;
 function abrirPlayer(item){
-  const url = typeof item==='string' ? item : item.player_url;
-  if(!url){ abrirAviso('Este conteúdo não possui uma URL de reprodução válida.','erro','Link inválido'); return; }
-  _itemPendente = item;
-  mostrarSeletorPlayer(item, url);
-}
-
-function mostrarSeletorPlayer(item, url){
-  const titulo = typeof item==='object' ? (item.titulo||'') : '';
-  let modal = document.getElementById('modalSeletorPlayer');
-  if(!modal){
-    modal = document.createElement('div');
-    modal.id = 'modalSeletorPlayer';
-    modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:8500;justify-content:center;align-items:flex-end;padding:0;';
-    modal.innerHTML = `
-      <div id="seletorOverlay" style="position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" onclick="fecharSeletorPlayer()"></div>
-      <div id="seletorSheet" style="
-        position:relative;z-index:1;width:100%;max-width:480px;margin:0 auto;
-        background:linear-gradient(180deg,#0d1022 0%,#080b16 100%);
-        border-radius:24px 24px 0 0;
-        border:1px solid rgba(201,162,39,.15);border-bottom:none;
-        padding:0 0 calc(20px + env(safe-area-inset-bottom));
-        box-shadow:0 -24px 80px rgba(0,0,0,.8);
-        animation:sheetUp .32s cubic-bezier(.16,1,.3,1);
-      ">
-        <div style="display:flex;justify-content:center;padding:14px 0 4px">
-          <div style="width:36px;height:4px;border-radius:4px;background:rgba(255,255,255,.15)"></div>
-        </div>
-        <div style="padding:16px 24px 20px;">
-          <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;color:rgba(201,162,39,.6);text-transform:uppercase;margin-bottom:6px">Reproduzir em</div>
-          <div id="seletorTitulo" style="font-size:15px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:20px"></div>
-
-          <!-- Botão Player Interno -->
-          <button id="btnPlayerInterno" onclick="confirmarPlayerInterno()" style="
-            width:100%;display:flex;align-items:center;gap:16px;padding:16px 18px;
-            background:linear-gradient(135deg,rgba(201,162,39,.12),rgba(201,162,39,.06));
-            border:1px solid rgba(201,162,39,.28);border-radius:16px;
-            color:#fff;cursor:pointer;transition:all .2s;margin-bottom:10px;text-align:left;
-          ">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#c9a227,#a07d14);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            </div>
-            <div>
-              <div style="font-size:15px;font-weight:700;margin-bottom:3px;">Player Interno</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.45);font-weight:400;">Reproduzir dentro do Royal Streams</div>
-            </div>
-            <svg style="margin-left:auto;flex-shrink:0;color:rgba(201,162,39,.7)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-
-          <!-- Botão VLC -->
-          <button id="btnPlayerVLC" onclick="confirmarPlayerVLC()" style="
-            width:100%;display:flex;align-items:center;gap:16px;padding:16px 18px;
-            background:rgba(255,255,255,.04);
-            border:1px solid rgba(255,255,255,.1);border-radius:16px;
-            color:#fff;cursor:pointer;transition:all .2s;text-align:left;
-          ">
-            <div style="width:44px;height:44px;border-radius:12px;background:#e47a11;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
-              <svg width="26" height="26" viewBox="0 0 64 64" fill="none">
-                <ellipse cx="32" cy="32" rx="30" ry="30" fill="#e47a11"/>
-                <polygon points="24,18 48,32 24,46" fill="white"/>
-              </svg>
-            </div>
-            <div>
-              <div style="font-size:15px;font-weight:700;margin-bottom:3px;">Player VLC</div>
-              <div style="font-size:12px;color:rgba(255,255,255,.45);font-weight:400;">Abrir no VLC Media Player</div>
-            </div>
-            <svg style="margin-left:auto;flex-shrink:0;color:rgba(255,255,255,.25)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-        </div>
-      </div>`;
-    document.body.appendChild(modal);
-  }
-  document.getElementById('seletorTitulo').textContent = titulo || 'Conteúdo selecionado';
-  modal.style.display = 'flex';
-}
-
-function fecharSeletorPlayer(){
-  const modal = document.getElementById('modalSeletorPlayer');
-  if(!modal) return;
-  const sheet = document.getElementById('seletorSheet');
-  if(sheet) sheet.style.animation = 'sheetDown .25s cubic-bezier(.4,0,1,1) forwards';
-  setTimeout(()=>{ modal.style.display='none'; if(sheet) sheet.style.animation=''; }, 230);
-}
-
-function confirmarPlayerInterno(){
-  fecharSeletorPlayer();
-  const item = _itemPendente;
-  _itemPendente = null;
-  if(!item) return;
-  // Pausar banner se estiver tocando
-  const banVid=document.getElementById('bannerVideo');
-  if(banVid&&!banVid.paused) banVid.pause();
-  // Salvar item atual
-  window._itemAtualPlayer = typeof item==='object' ? item : null;
-  _abrirPlayerReal(item);
-  // Restaurar timestamp
-  if(window._itemAtualPlayer && window._itemAtualPlayer.id){
-    const ts = typeof getTimestamp==='function' ? getTimestamp(window._itemAtualPlayer.id) : null;
-    if(ts && ts.time > 10){
-      const v = document.getElementById('player');
-      const tryRestore = ()=>{ if(v.readyState>=2&&v.duration){ v.currentTime=ts.time; } else { setTimeout(tryRestore,500); } };
-      setTimeout(tryRestore,1500);
-    }
-  }
-}
-
-function confirmarPlayerVLC(){
-  fecharSeletorPlayer();
-  const item = _itemPendente;
-  _itemPendente = null;
-  if(!item) return;
-  const url = typeof item==='string' ? item : item.player_url;
-  if(!url) return;
-
-  const ua = navigator.userAgent || '';
-  const isAndroid = /android/i.test(ua);
-  const isIOS = /iphone|ipad|ipod/i.test(ua);
-
-  let opened = false;
-  let fallbackTimer = null;
-
-  function tentarFallbackPlayStore(){
-    if(!opened){
-      window.open('https://play.google.com/store/apps/details?id=org.videolan.vlc', '_blank');
-    }
-  }
-
-  if(isAndroid){
-    // Android: Intent URL - mais compatível com todos os formatos
-    // Tenta intent:// primeiro (Chrome Android abre o app diretamente)
-    const intentUrl = 'intent://' + url.replace(/^https?:\/\//,'') +
-      '#Intent;scheme=' + (url.startsWith('https') ? 'https' : 'http') +
-      ';package=org.videolan.vlc;end';
-    try {
-      window.location.href = intentUrl;
-      opened = true;
-      // Se o app abriu, a página perde foco
-      fallbackTimer = setTimeout(tentarFallbackPlayStore, 2000);
-      window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
-      document.addEventListener('visibilitychange', function onVis(){
-        if(document.hidden){ clearTimeout(fallbackTimer); opened=true; }
-        document.removeEventListener('visibilitychange', onVis);
-      }, { once:true });
-    } catch(e) {
-      // Fallback: vlc:// scheme
-      const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
-      window.location.href = vlcUrl;
-      fallbackTimer = setTimeout(tentarFallbackPlayStore, 2000);
-      window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
-    }
-  } else if(isIOS){
-    // iOS VLC: vlc-x-callback://x-callback-url/stream?url=...
-    const vlcIOS = 'vlc-x-callback://x-callback-url/stream?url=' + encodeURIComponent(url);
-    const link = document.createElement('a');
-    link.href = vlcIOS;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    fallbackTimer = setTimeout(()=>{
-      window.open('https://apps.apple.com/app/vlc-for-mobile/id650377962', '_blank');
-    }, 2000);
-    window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
-  } else {
-    // Desktop: abre o link direto numa nova aba / tenta vlc://
-    const vlcUrl = 'vlc://' + url.replace(/^https?:\/\//,'');
-    window.open(vlcUrl, '_blank');
-    // Após 2s, se não abriu nada útil, sugere download
-    fallbackTimer = setTimeout(()=>{
-      window.open('https://www.videolan.org/vlc/', '_blank');
-    }, 2500);
-    window.addEventListener('blur', ()=>{ clearTimeout(fallbackTimer); }, { once:true });
-  }
-}
-
-// Injeta animação sheetUp/sheetDown se não existir
-(function(){
-  if(!document.getElementById('sheetAnimStyle')){
-    const s = document.createElement('style');
-    s.id = 'sheetAnimStyle';
-    s.textContent = `
-      @keyframes sheetUp { from { opacity:0; transform:translateY(100%); } to { opacity:1; transform:translateY(0); } }
-      @keyframes sheetDown { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(100%); } }
-      #btnPlayerInterno:hover { background:linear-gradient(135deg,rgba(201,162,39,.22),rgba(201,162,39,.1)) !important; border-color:rgba(201,162,39,.5) !important; transform:translateY(-1px); }
-      #btnPlayerVLC:hover { background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.2) !important; transform:translateY(-1px); }
-    `;
-    document.head.appendChild(s);
-  }
-})();
-
-function _abrirPlayerReal(item){
   const url = typeof item==='string' ? item : item.player_url;
   if(!url){ abrirAviso('Este conteúdo não possui uma URL de reprodução válida.','erro','Link inválido'); return; }
 
@@ -3220,10 +2714,9 @@ function _abrirPlayerReal(item){
   const video = document.getElementById('player');
   const videoWrap = document.getElementById('rspVideoWrap');
 
-  // Destroi instância HLS anterior
   if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
 
-  // Remove iframe anterior
+  // Remove iframe anterior se existir
   const oldIframe = document.getElementById('rspIframe');
   if(oldIframe) oldIframe.remove();
 
@@ -3233,86 +2726,48 @@ function _abrirPlayerReal(item){
   atualizarIconeExpand();
 
   document.getElementById('playerTitulo').textContent = typeof item==='object' ? (item.titulo||'') : '';
+
   if(typeof item==='object' && item.id) adicionarHistorico(item);
 
   mostrarVideoLoading(true);
   esconderErroPlayer();
 
-  // Reseta o elemento video
-  video.pause();
-  video.removeAttribute('src');
-  video.load();
-  video.style.display = 'block';
-  document.getElementById('rspProgressWrap').style.display = '';
+  const formato = detectarFormatoURL(url);
 
-  // ── Função principal de carregamento ──
-  function playURL(src){
-    const ext = src.toLowerCase().split('?')[0];
-    const isHLS = ext.includes('.m3u8') || ext.includes('.ts');
-
-    if(isHLS || (!ext.includes('.mp4') && !ext.includes('.webm') && !ext.includes('.ogv'))){
-      // Tenta HLS.js primeiro (suporta .m3u8, .ts, e streams sem extensão)
-      if(Hls.isSupported()){
-        hlsInstance = new Hls({
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 30,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          xhrSetup: xhr => { xhr.withCredentials = false; }
-        });
-        hlsInstance.loadSource(src);
-        hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
-          mostrarVideoLoading(false);
-          video.muted = false;
-          video.play().catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
-        });
-        hlsInstance.on(Hls.Events.ERROR, (_, data)=>{
-          if(!data.fatal) return;
-          mostrarVideoLoading(false);
-          if(data.type === Hls.ErrorTypes.NETWORK_ERROR && !hlsInstance._retried){
-            hlsInstance._retried = true;
-            hlsInstance.startLoad();
-          } else if(data.type === Hls.ErrorTypes.MEDIA_ERROR){
-            hlsInstance.recoverMediaError();
-          } else {
-            // Fatal sem recuperação → iframe
-            hlsInstance.destroy(); hlsInstance = null;
-            loadIframe(src);
-          }
-        });
-      } else if(video.canPlayType('application/vnd.apple.mpegurl')){
-        // Safari nativo suporta HLS
-        loadNativo(src);
-      } else {
-        loadIframe(src);
+  function carregarHLScomHlsJs(){
+    if(hlsInstance){ hlsInstance.destroy(); hlsInstance=null; }
+    hlsInstance = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true,
+      maxBufferLength: 60,
+      maxMaxBufferLength: 120,
+      backBufferLength: 30,
+      xhrSetup: function(xhr){ xhr.withCredentials = false; }
+    });
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(video);
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, ()=>{
+      mostrarVideoLoading(false);
+      video.play().catch(()=>{});
+    });
+    hlsInstance.on(Hls.Events.ERROR, (_, data)=>{
+      console.warn('[HLS.js] Erro:', data.type, data.details);
+      if(data.fatal){
+        mostrarVideoLoading(false);
+        if(data.type === Hls.ErrorTypes.NETWORK_ERROR){
+          hlsInstance.startLoad();
+        } else if(data.type === Hls.ErrorTypes.MEDIA_ERROR){
+          hlsInstance.recoverMediaError();
+        } else {
+          // Fatal: tenta iframe como fallback
+          hlsInstance.destroy(); hlsInstance=null;
+          carregarIframe(url);
+        }
       }
-    } else if(src.includes('youtube.com') || src.includes('youtu.be')){
-      const yid = extrairYouTubeID(src);
-      loadIframe(yid ? `https://www.youtube.com/embed/${yid}?autoplay=1&rel=0` : src);
-    } else {
-      // MP4, WebM etc → nativo, fallback iframe
-      loadNativo(src);
-    }
+    });
   }
 
-  function loadNativo(src){
-    video.style.display = 'block';
-    document.getElementById('rspProgressWrap').style.display = '';
-    video.src = src;
-    video.load();
-    video.addEventListener('canplay', ()=>{
-      mostrarVideoLoading(false);
-      video.play().catch(()=>{ video.muted=true; video.play().catch(()=>{}); });
-    }, {once:true});
-    video.addEventListener('error', ()=>{
-      mostrarVideoLoading(false);
-      loadIframe(src);
-    }, {once:true});
-  }
-
-  function loadIframe(src){
+  function carregarIframe(src){
     esconderErroPlayer();
     video.style.display = 'none';
     document.getElementById('rspProgressWrap').style.display = 'none';
@@ -3326,15 +2781,59 @@ function _abrirPlayerReal(item){
     mostrarVideoLoading(false);
   }
 
-  playURL(url);
+  function carregarVideoNativo(src){
+    video.style.display = 'block';
+    document.getElementById('rspProgressWrap').style.display = '';
+    video.src = src;
+    video.addEventListener('canplay', ()=>{ mostrarVideoLoading(false); video.play().catch(()=>{}); }, {once:true});
+    video.addEventListener('error', ()=>{
+      mostrarVideoLoading(false);
+      // Fallback para iframe se o formato nativo falhar
+      console.warn('[Player] Erro nativo, tentando iframe...');
+      carregarIframe(url);
+    }, {once:true});
+  }
+
+  // Esconde barra de progresso para streams ao vivo (TV)
+  const isLive = formato === 'hls' && (typeof item==='object' && item.tipo === 'tv');
+
+  if(formato === 'hls'){
+    if(Hls.isSupported()){
+      video.style.display = 'block';
+      document.getElementById('rspProgressWrap').style.display = '';
+      carregarHLScomHlsJs();
+    } else if(video.canPlayType('application/vnd.apple.mpegurl')){
+      carregarVideoNativo(url);
+    } else {
+      carregarHLScomHlsJs();
+    }
+  } else if(formato === 'youtube' || formato === 'youtube_embed'){
+    const vid = extrairYouTubeID(url);
+    if(vid){
+      carregarIframe(`https://www.youtube.com/embed/${vid}?autoplay=1&rel=0`);
+    } else {
+      carregarIframe(url);
+    }
+  } else if(formato === 'mp4' || formato === 'webm' || formato === 'ts'){
+    carregarVideoNativo(url);
+  } else if(formato === 'mkv' || formato === 'avi' || formato === 'mov' || formato === 'flv'){
+    // Tenta nativo primeiro; se falhar, cai no iframe
+    carregarVideoNativo(url);
+  } else if(formato === 'dash'){
+    // MPEG-DASH: tenta nativo
+    carregarVideoNativo(url);
+  } else {
+    // Formato desconhecido: tenta nativo primeiro, depois iframe
+    carregarVideoNativo(url);
+  }
 
   // Eventos do vídeo → atualizar UI
-  video.ontimeupdate     = atualizarProgresso;
-  video.onplay           = ()=>{ atualizarBtnPlay(false); };
-  video.onpause          = ()=>{ atualizarBtnPlay(true); };
-  video.onwaiting        = ()=>{ mostrarVideoLoading(true); };
-  video.onplaying        = ()=>{ mostrarVideoLoading(false); };
-  video.onended          = ()=>{ atualizarBtnPlay(true); };
+  video.ontimeupdate  = atualizarProgresso;
+  video.onplay        = ()=>{ atualizarBtnPlay(false); };
+  video.onpause       = ()=>{ atualizarBtnPlay(true); };
+  video.onwaiting     = ()=>{ mostrarVideoLoading(true); };
+  video.onplaying     = ()=>{ mostrarVideoLoading(false); };
+  video.onended       = ()=>{ atualizarBtnPlay(true); };
   video.ondurationchange = atualizarProgresso;
   video.onvolumechange   = atualizarVolume;
 
@@ -4239,12 +3738,7 @@ let itemDetalheAtual = null;
 function abrirDetalhe(item){
   if(!item) return;
   itemDetalheAtual = item;
-  // Empurra na pilha de navegação
-  _navPush({ tipo: 'detalhe', item });
-  _renderDetalhe(item);
-}
-
-function _renderDetalhe(item){
+  const modal = document.getElementById('detalheModal');
   const img = document.getElementById('detalheHeroImg');
   if(img){ img.src = item.poster || ''; img.alt = item.titulo || ''; }
   const svgBadges={
@@ -4288,7 +3782,6 @@ function _renderDetalhe(item){
       relWrap.style.display='block';
     } else { relWrap.style.display='none'; }
   }
-  const modal = document.getElementById('detalheModal');
   if(modal){ modal.classList.add('show'); modal.scrollTop=0; }
   document.body.style.overflow='hidden';
 }
@@ -4296,10 +3789,6 @@ function fecharDetalhe(){
   const modal = document.getElementById('detalheModal');
   if(modal) modal.classList.remove('show');
   document.body.style.overflow='';
-  // Remove da pilha se o topo for um detalhe (quando fechado pelo botão X, não pelo popstate)
-  if(_navStack.length > 0 && _navStack[_navStack.length-1].tipo === 'detalhe'){
-    _navStack.pop();
-  }
 }
 function atualizarBotaoFavDetalhe(){
   if(!itemDetalheAtual) return;
@@ -4348,12 +3837,24 @@ atualizarProgresso = function(){
   const v=document.getElementById('player');
   if(v&&v.currentTime>0&&_itemAtualPlayer) salvarTimestamp(_itemAtualPlayer.id,v.currentTime,v.duration);
 };
-// Restaurar posição ao abrir player — o timestamp é aplicado em confirmarPlayerInterno
+// Restaurar posição ao abrir player
 let _itemAtualPlayer = null;
 const _abrirPlayerOriginal = abrirPlayer;
 abrirPlayer = function(item){
   _itemAtualPlayer = typeof item==='object' ? item : null;
+  // Pausar vídeo do banner
+  const banVid=document.getElementById('bannerVideo');
+  if(banVid&&!banVid.paused) banVid.pause();
   _abrirPlayerOriginal(item);
+  // Restaurar timestamp
+  if(_itemAtualPlayer&&_itemAtualPlayer.id){
+    const ts=getTimestamp(_itemAtualPlayer.id);
+    if(ts&&ts.time>10){
+      const v=document.getElementById('player');
+      const tryRestore=()=>{ if(v.readyState>=2&&v.duration){ v.currentTime=ts.time; } else { setTimeout(tryRestore,500); } };
+      setTimeout(tryRestore,1500);
+    }
+  }
 };
 // Retomar banner ao fechar player
 const _fecharPlayerOriginal = fecharPlayer;
@@ -5252,6 +4753,369 @@ function fecharAdPopup(e) {
 <script src="https://sdk.mercadopago.com/js/v2"></script>
 <!-- Container invisível para o botão do MP (necessário para o lightbox) -->
 <div id="mp-checkout-container" style="display:none;position:absolute;"></div>
+
+<script>
+/* ==============================================
+   SERVICE WORKER — CACHE OFFLINE + IMAGENS
+   Registra via Blob para funcionar em arquivo
+   único sem precisar de sw.js externo
+============================================== */
+if("serviceWorker" in navigator){
+  const swCode = `
+const CACHE     = "royal-streams-v1";
+const IMG_CACHE = "royal-img-cache-v1";
+const ASSETS    = ["./"];
+
+self.addEventListener("install", e => {
+  self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+  );
+});
+
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE && k !== IMG_CACHE)
+          .map(k => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// ── CACHE DE IMAGENS (separado, dedicado) ──
+self.addEventListener("fetch", e => {
+  if(e.request.method !== "GET") return;
+  if(e.request.url.startsWith("chrome-extension://")) return;
+
+  if(e.request.destination === "image"){
+    e.respondWith(
+      caches.open(IMG_CACHE).then(cache => {
+        return cache.match(e.request).then(res => {
+          if(res) return res;
+          return fetch(e.request).then(network => {
+            if(network && network.status === 200){
+              cache.put(e.request, network.clone());
+            }
+            return network;
+          }).catch(() => res);
+        });
+      })
+    );
+    return;
+  }
+
+  // ── CACHE GERAL (app shell + assets) ──
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if(cached) return cached;
+      return fetch(e.request).then(res => {
+        if(!res || res.status !== 200 || res.type === "opaque") return res;
+        return caches.open(CACHE).then(cache => {
+          cache.put(e.request, res.clone());
+          return res;
+        });
+      }).catch(() => cached);
+    })
+  );
+});
+  `;
+
+  const blob = new Blob([swCode], { type: "text/javascript" });
+  const swURL = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swURL)
+    .then(reg => {
+      console.log("[SW] Service Worker ativo:", reg.scope);
+      URL.revokeObjectURL(swURL);
+    })
+    .catch(err => console.warn("[SW] Falha ao registrar:", err));
+}
+</script>
+
+<script>
+/* ==============================================
+   ROYAL STREAMS — INDEXEDDB + LAZY IMG + PAGINAÇÃO
+   Um único banco "RoyalStreamsCache" com duas stores:
+     • "catalogo"  — itens do Firestore/API
+     • "conteudos" — alias público (salvarCache/lerCache)
+============================================== */
+
+const API_CATALOGO = "https://royal-streams.github.io/Royal-Streams//api/catalogo";
+
+let idb = null;
+
+// ── ABRIR / CRIAR BANCO UNIFICADO ──
+const idbReq = indexedDB.open("RoyalStreamsCache", 2);
+
+idbReq.onupgradeneeded = e => {
+  const d = e.target.result;
+  if(!d.objectStoreNames.contains("catalogo")){
+    d.createObjectStore("catalogo",  { keyPath: "id" });
+  }
+  if(!d.objectStoreNames.contains("conteudos")){
+    d.createObjectStore("conteudos", { keyPath: "id" });
+  }
+};
+
+idbReq.onerror = e => {
+  console.warn("[IndexedDB] Erro ao abrir:", e.target.error);
+};
+
+idbReq.onsuccess = e => {
+  idb = e.target.result;
+  idbCarregarCache();
+  idbAtualizarCatalogo();
+};
+
+/* ── API PÚBLICA: salvarCache / lerCache ──────────── */
+function salvarCache(lista, store = "conteudos"){
+  if(!idb) return;
+  try{
+    const tx    = idb.transaction(store, "readwrite");
+    const obj   = tx.objectStore(store);
+    lista.forEach(item => {
+      if(!item.id) item.id = (item.titulo||item.nome||"") + "_" + (item.categoria||item.tipo||"");
+      obj.put(item);
+    });
+  }catch(e){ console.warn("[IndexedDB] salvarCache:", e); }
+}
+
+function lerCache(callback, store = "conteudos"){
+  if(!idb){ callback([]); return; }
+  try{
+    const tx  = idb.transaction(store, "readonly");
+    const obj = tx.objectStore(store);
+    const req = obj.getAll();
+    req.onsuccess = () => callback(req.result || []);
+    req.onerror   = () => callback([]);
+  }catch(e){ console.warn("[IndexedDB] lerCache:", e); callback([]); }
+}
+
+/* ── BUSCAR DA API REST ───────────────────────────── */
+async function idbAtualizarCatalogo(){
+  try{
+    const res = await fetch(API_CATALOGO);
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const dados = await res.json();
+    if(!Array.isArray(dados)) throw new Error("Resposta inválida");
+    idbSalvarCache(dados);
+    salvarCache(dados);            // também salva na store "conteudos"
+    idbRenderCatalogo(dados);
+    console.log("[API] Catálogo:", dados.length, "itens");
+  }catch(e){
+    console.warn("[API] Falha:", e.message);
+  }
+}
+
+/* ── SALVAR NA STORE "catalogo" ───────────────────── */
+function idbSalvarCache(lista){
+  if(!idb) return;
+  try{
+    const tx    = idb.transaction("catalogo", "readwrite");
+    const store = tx.objectStore("catalogo");
+    lista.forEach(item => {
+      if(!item.id) item.id = (item.titulo||"") + "_" + (item.categoria||"");
+      store.put(item);
+    });
+  }catch(e){ console.warn("[IndexedDB] idbSalvarCache:", e); }
+}
+
+/* ── LER DA STORE "catalogo" ──────────────────────── */
+function idbCarregarCache(){
+  if(!idb) return;
+  try{
+    const tx    = idb.transaction("catalogo", "readonly");
+    const store = tx.objectStore("catalogo");
+    const req   = store.getAll();
+    req.onsuccess = () => {
+      const dados = req.result;
+      if(dados && dados.length > 0){
+        idbRenderCatalogo(dados);
+        console.log("[Cache] IndexedDB:", dados.length, "itens");
+      }
+    };
+  }catch(e){ console.warn("[IndexedDB] idbCarregarCache:", e); }
+}
+
+/* ── SEPARAR POR CATEGORIA ────────────────────────── */
+function idbSepararCategorias(lista){
+  const cat = { filmes:[], series:[], animes:[], animestv:[], tv:[] };
+  lista.forEach(item => {
+    const c = (item.categoria || item.tipo || "").toLowerCase().replace(/\s/g,"");
+    if     (c==="filmes"  || c==="filme")              cat.filmes.push(item);
+    else if(c==="series"  || c==="serie")              cat.series.push(item);
+    else if(c==="animestv"|| c==="anime_tv")           cat.animestv.push(item);
+    else if(c==="animes"  || c==="anime")              cat.animes.push(item);
+    else if(c==="tv")                                  cat.tv.push(item);
+  });
+  return cat;
+}
+
+/* ── RENDER PRINCIPAL ─────────────────────────────── */
+function idbRenderCatalogo(lista){
+  const cat = idbSepararCategorias(lista);
+  idbCriarGrid("grid-filmes",   cat.filmes);
+  idbCriarGrid("grid-series",   cat.series);
+  idbCriarGrid("grid-animes",   cat.animes);
+  idbCriarGrid("grid-animestv", cat.animestv);
+  idbCriarGrid("grid-tv",       cat.tv);
+
+  lista.forEach(item => {
+    const norm = idbNormalizarItem(item);
+    if(!todosConteudos.find(c => c.id === norm.id)){
+      todosConteudos.push(norm);
+    }
+  });
+}
+
+/* ── NORMALIZAR ITEM ──────────────────────────────── */
+function idbNormalizarItem(item){
+  const tipoMap = {
+    filme:"filme", filmes:"filme",
+    serie:"serie", series:"serie",
+    anime:"anime", animes:"anime",
+    anime_tv:"anime_tv", animestv:"anime_tv",
+    tv:"tv"
+  };
+  const catRaw = (item.categoria || item.tipo || "").toLowerCase().replace(/\s/g,"");
+  return {
+    id:         item.id || ((item.titulo||item.nome||"") + "_" + catRaw),
+    titulo:     item.titulo || item.nome || "Sem título",
+    poster:     item.capa   || item.poster || item.thumb || "",
+    player_url: item.url    || item.player_url || item.link || "",
+    descricao:  item.descricao || item.sinopse || "",
+    categoria:  item.categoria || "",
+    tipo:       tipoMap[catRaw] || catRaw,
+    ano:        item.ano || "",
+    qualidade:  item.qualidade || "",
+    duracao:    item.duracao || "",
+    temporadas: item.temporadas || ""
+  };
+}
+
+/* ── LAZY LOADING (IntersectionObserver) ──────────── */
+const _lazyObserver = new IntersectionObserver((entries, obs) => {
+  entries.forEach(entry => {
+    if(!entry.isIntersecting) return;
+    const img = entry.target;
+    if(img.dataset.src){
+      img.src = img.dataset.src;
+      img.removeAttribute("data-src");
+    }
+    obs.unobserve(img);
+  });
+}, { rootMargin: "200px 0px" });   // pré-carrega 200px antes de entrar na tela
+
+function observarLazy(img){
+  _lazyObserver.observe(img);
+}
+
+/* ── PAGINAÇÃO INFINITA (40 por página) ───────────── */
+const _paginacao = {};   // { gridId: { pagina, lista, porPagina } }
+
+function idbIniciarPaginacao(gridId, lista, porPagina = 40){
+  _paginacao[gridId] = { pagina: 0, lista, porPagina };
+  _idbRenderPagina(gridId);           // primeira carga
+}
+
+function _idbRenderPagina(gridId){
+  const state = _paginacao[gridId];
+  if(!state) return;
+  const { pagina, lista, porPagina } = state;
+  const inicio = pagina * porPagina;
+  const fim    = inicio + porPagina;
+  const fatia  = lista.slice(inicio, fim);
+  if(fatia.length === 0) return;
+
+  const container = document.getElementById(gridId);
+  if(!container) return;
+
+  const existentes = new Set(
+    Array.from(container.querySelectorAll(".card-item[data-id]"))
+         .map(el => el.dataset.id)
+  );
+
+  fatia.forEach(item => {
+    const norm = idbNormalizarItem(item);
+    if(existentes.has(norm.id)) return;
+
+    const card = document.createElement("div");
+    card.className  = "card-item";
+    card.dataset.id = norm.id;
+
+    const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='140'%3E%3Crect width='300' height='140' fill='%23151515'/%3E%3C/svg%3E";
+    const poster      = norm.poster || placeholder;
+
+    // Usa data-src para lazy loading
+    card.innerHTML =
+      `<img data-src="${poster}" src="${placeholder}" alt="${norm.titulo}" loading="lazy"
+            onerror="this.removeAttribute('onerror');this.src='${placeholder}'">
+       <span>${norm.titulo}</span>`;
+
+    // Ativa lazy observer na imagem
+    const img = card.querySelector("img");
+    observarLazy(img);
+
+    card.addEventListener("click", () => {
+      if(typeof abrirModal === "function") abrirModal(norm);
+      else if(norm.player_url) idbPlay(norm.player_url);
+    });
+
+    container.appendChild(card);
+  });
+
+  state.pagina++;
+}
+
+/* ── SCROLL INFINITO ──────────────────────────────── */
+window.addEventListener("scroll", () => {
+  if(window.innerHeight + window.scrollY < document.body.offsetHeight - 300) return;
+  // Carrega próxima página de todos os grids visíveis
+  Object.keys(_paginacao).forEach(gridId => {
+    const el = document.getElementById(gridId);
+    if(el && el.offsetParent !== null){    // só se o grid estiver visível
+      _idbRenderPagina(gridId);
+    }
+  });
+}, { passive: true });
+
+/* ── PREENCHER GRID (com paginação + lazy) ────────── */
+function idbCriarGrid(gridId, lista){
+  const container = document.getElementById(gridId);
+  if(!container || lista.length === 0) return;
+  // Reseta paginação e renderiza primeira página
+  idbIniciarPaginacao(gridId, lista, 40);
+}
+
+/* ── PLAY COM SUPORTE HLS ─────────────────────────── */
+function idbPlay(url){
+  if(!url) return;
+  if(typeof abrirPlayer === "function"){
+    abrirPlayer({ titulo:"", player_url: url, tipo:"filme" });
+    return;
+  }
+  const video = document.getElementById("player");
+  if(!video) return;
+  if(url.includes(".m3u8")){
+    if(typeof Hls !== "undefined" && Hls.isSupported()){
+      const hls = new Hls({ maxBufferLength:60, maxMaxBufferLength:120, enableWorker:true, lowLatencyMode:true });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else if(video.canPlayType("application/vnd.apple.mpegurl")){
+      video.src = url;
+      video.play();
+    }
+  } else {
+    video.src = url;
+    video.play();
+  }
+}
+</script>
 
 </body>
 </html>
