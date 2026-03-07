@@ -1953,7 +1953,6 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -1970,9 +1969,113 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
 const rtdb = firebase.database();
 const analytics = firebase.analytics();
+
+// ── Shim Firestore-like API sobre Realtime Database ──────────────
+// Todas as leituras/escritas vão para o Realtime DB no caminho correto.
+const db = (function(){
+  function makeSnap(entries){
+    const docs = entries.map(([id, data]) => ({
+      id, exists: true, data: () => data
+    }));
+    return { empty: docs.length===0, size: docs.length, docs, forEach: fn => docs.forEach(fn) };
+  }
+  function makeDocSnap(id, data){
+    return { id, exists: !!data, data: () => data || {} };
+  }
+  function collRef(col){
+    const ref = rtdb.ref(col);
+    let _wf=null,_wo=null,_wv=null,_wArr=null,_ob=null,_lim=null;
+    const q = {
+      where(f,op,v){ _wf=f;_wo=op; if(op==='in')_wArr=v; else _wv=v; return q; },
+      orderBy(f,d){ _ob={f,d:d||'desc'}; return q; },
+      limit(n){ _lim=n; return q; },
+      async get(){
+        const snap = await ref.once('value');
+        const val = snap.val()||{};
+        let entries = Object.entries(val);
+        if(_wf&&_wo){
+          entries = entries.filter(([,d])=>{
+            const v=d[_wf];
+            if(_wo==='=='||_wo==='===') return v===_wv;
+            if(_wo==='in') return _wArr&&_wArr.includes(v);
+            if(_wo==='>') return v>_wv;
+            if(_wo==='<') return v<_wv;
+            return true;
+          });
+        }
+        if(_ob){
+          const {f,d} = _ob;
+          entries.sort(([,a],[,b])=>{
+            const av=a[f]||'', bv=b[f]||'';
+            if(av<bv) return d==='asc'?-1:1;
+            if(av>bv) return d==='asc'?1:-1;
+            return 0;
+          });
+        }
+        if(_lim!==null) entries=entries.slice(0,_lim);
+        return makeSnap(entries);
+      },
+      // onSnapshot: usa .on('value') do RTDB
+      onSnapshot(cb, errCb){
+        let unsubFn = null;
+        const handler = snap => {
+          const val = snap.val()||{};
+          let entries = Object.entries(val);
+          if(_wf&&_wo){
+            entries = entries.filter(([,d])=>{
+              const v=d[_wf];
+              if(_wo==='=='||_wo==='===') return v===_wv;
+              if(_wo==='in') return _wArr&&_wArr.includes(v);
+              return true;
+            });
+          }
+          if(_ob){
+            const {f,d} = _ob;
+            entries.sort(([,a],[,b])=>{
+              const av=a[f]||'', bv=b[f]||'';
+              if(av<bv) return d==='asc'?-1:1;
+              if(av>bv) return d==='asc'?1:-1;
+              return 0;
+            });
+          }
+          if(_lim!==null) entries=entries.slice(0,_lim);
+          cb(makeSnap(entries));
+        };
+        ref.on('value', handler, errCb);
+        return () => ref.off('value', handler); // unsubscribe
+      },
+      async add(data){
+        const newRef = ref.push();
+        await newRef.set(data);
+        return { id: newRef.key };
+      },
+      doc(id){ return docRef(col, id); }
+    };
+    return q;
+  }
+  function docRef(col, id){
+    const ref = rtdb.ref(col+'/'+id);
+    return {
+      id,
+      async get(){
+        const s = await ref.once('value');
+        return makeDocSnap(id, s.val());
+      },
+      async set(data, opts){
+        if(opts&&opts.merge){
+          const s=await ref.once('value'); const ex=s.val()||{};
+          await ref.set({...ex,...data});
+        } else { await ref.set(data); }
+      },
+      async update(data){ await ref.update(data); },
+      async delete(){ await ref.remove(); },
+      collection(sub){ return collRef(col+'/'+id+'/'+sub); }
+    };
+  }
+  return { collection: collRef };
+})();
 
 // ── PERSISTÊNCIA DE SESSÃO ──
 // Firebase já mantém o usuário logado automaticamente.
@@ -1992,26 +2095,59 @@ function limparPerfilLocal(){
 // Listener principal — dispara ao abrir o app
 auth.onAuthStateChanged(async (user) => {
   if(!user){
-    // Não logado: garante que splash termina e mostra login
+    // Não logado — garante que loginBox aparece quando o splash terminar
+    document.getElementById('loginBox').style.visibility = '';
     return;
   }
-  // Usuário já autenticado pelo Firebase
+  // Usuário autenticado — mata o splash imediatamente
+  const splash = document.getElementById('splashScreen');
+  if(splash) splash.style.display = 'none';
+  document.getElementById('loginBox').style.display = 'none';
+
   usuarioAtual = user;
   showLoading();
   try{
-    const doc = await db.collection('clientes').doc(user.uid).get();
-    if(!doc.exists || doc.data().status !== 'ativado'){
+    // Lê direto do RTDB pelo uid do Auth (timeout 8s)
+    const snap = await Promise.race([
+      rtdb.ref('clientes/' + user.uid).once('value'),
+      new Promise((_,rej) => setTimeout(() => rej(new Error('Timeout ao verificar conta')), 8000))
+    ]);
+    const data = snap.val();
+
+    // Se não encontrou pelo uid, tenta buscar pelo campo email_auth
+    let clienteData = data;
+    if(!clienteData){
+      const allSnap = await rtdb.ref('clientes').once('value');
+      const allData = allSnap.val() || {};
+      const emailAuth = user.email;
+      for(const key in allData){
+        const c = allData[key];
+        if(c.email_auth === emailAuth || c.usuario === emailAuth){
+          clienteData = c;
+          break;
+        }
+      }
+    }
+
+    if(!clienteData || clienteData.status !== 'ativado'){
       hideLoading();
       auth.signOut();
+      document.getElementById('loginBox').style.display = '';
+      document.getElementById('loginBox').style.visibility = '';
+      abrirAviso('Acesso não autorizado ou conta inativa.','erro','Acesso negado');
       return;
     }
-    const data = doc.data();
-    perfisSalvos = data.perfis || [];
+
+    // perfis pode vir como objeto {0:{...},1:{...}} ou array — normaliza para array
+    const perfisRaw = clienteData.perfis || [];
+    perfisSalvos = Array.isArray(perfisRaw)
+      ? perfisRaw
+      : Object.values(perfisRaw);
 
     // Dias restantes
-    const campoVencimento = data.expiracao || null;
+    const campoVencimento = clienteData.expiracao || null;
     if(campoVencimento){
-      const venc = campoVencimento.toDate ? campoVencimento.toDate() : new Date(campoVencimento);
+      const venc = new Date(campoVencimento);
       diasRestantes = Math.max(0, Math.ceil((venc - new Date()) / (24*60*60*1000)));
       ativadoEm = new Date(venc.getTime() - (31*24*60*60*1000));
     }
@@ -2023,18 +2159,16 @@ auth.onAuthStateChanged(async (user) => {
     hideLoading();
 
     if(perfilValido){
-      // Restaura direto no perfil salvo, sem passar pela tela de seleção
-      document.getElementById('splashScreen').style.display='none';
-      document.getElementById('loginBox').style.display='none';
       await entrarPerfil(perfilValido);
     } else {
-      // Sem perfil salvo: mostra tela de seleção de perfis
-      document.getElementById('splashScreen').style.display='none';
-      document.getElementById('loginBox').style.display='none';
       mostrarPerfis(perfisSalvos);
     }
   }catch(e){
+    console.error('[Auth] Erro ao carregar cliente:', e);
     hideLoading();
+    document.getElementById('loginBox').style.display = '';
+    document.getElementById('loginBox').style.visibility = '';
+    abrirAviso('Erro ao verificar sua conta. Tente novamente.','erro','Erro de conexão');
   }
 });
 
@@ -2312,7 +2446,10 @@ async function confirmarDelPerfil(){
   const novosPerfis=perfisSalvos.filter((_,i)=>i!==idx);
   showLoading();
   try{
-    await Promise.all([db.collection('perfis_dados').doc(`${usuarioAtual.uid}_${nome}`).delete().catch(()=>{}),db.collection('clientes').doc(usuarioAtual.uid).update({perfis:novosPerfis})]);
+    await Promise.all([
+      rtdb.ref('perfis_dados/'+usuarioAtual.uid+'_'+nome).remove().catch(()=>{}),
+      rtdb.ref('clientes/'+usuarioAtual.uid).update({perfis:novosPerfis})
+    ]);
     perfisSalvos=novosPerfis;renderizarPerfis(novosPerfis);
   }catch(err){toast('Erro: '+err.message,'red')}
   hideLoading();
@@ -2346,7 +2483,7 @@ async function salvarNovoPerfil(){
   const novosPerfis=[...perfisSalvos,{nome,avatar}];
   showLoading();
   try{
-    await db.collection('clientes').doc(usuarioAtual.uid).update({perfis:novosPerfis});
+    await rtdb.ref('clientes/'+usuarioAtual.uid).update({perfis:novosPerfis});
     perfisSalvos=novosPerfis;fecharModalNovoPerfil();renderizarPerfis(novosPerfis);
   }catch(e){toast('Erro: '+e.message,'red')}
   hideLoading();
@@ -2357,7 +2494,6 @@ async function entrarPerfil(perfil){
   const nome=typeof perfil==='object'?perfil.nome:perfil;
   const avatar=typeof perfil==='object'?perfil.avatar:null;
   perfilAtual=nome;
-  // Salva perfil localmente para restaurar na próxima visita
   salvarPerfilLocal(nome, avatar);
   document.getElementById('perfilBox').style.display='none';
   document.getElementById('appHeader').style.display='flex';
@@ -2372,8 +2508,15 @@ async function entrarPerfil(perfil){
     document.getElementById('dropdownAvatar').src=avatarSrc;
     document.getElementById('drawerAvatar').src=avatarSrc;
   }
-  await carregarDadosPerfil();
-  await carregarCatalogo();
+  try{
+    await carregarDadosPerfil();
+  }catch(e){ console.warn('[Perfil] carregarDadosPerfil erro:', e); }
+  try{
+    await carregarCatalogo();
+  }catch(e){
+    console.warn('[Perfil] carregarCatalogo erro:', e);
+    hideLoading(); // garante que o loading some mesmo em erro
+  }
   atualizarDropdownDias();
 }
 
@@ -2416,17 +2559,23 @@ function atualizarDropdownDias(){
 async function carregarDadosPerfil(){
   if(!perfilAtual){favoritosAtual=[];historicoAtual=[];watchlistAtual=[];return}
   try{
-    const doc=await db.collection('perfis_dados').doc(perfilKey()).get();
-    if(doc.exists){favoritosAtual=doc.data().favoritos||[];historicoAtual=doc.data().historico||[];watchlistAtual=doc.data().watchlist||[]}
-    else{favoritosAtual=[];historicoAtual=[];watchlistAtual=[]}
+    const snap=await rtdb.ref('perfis_dados/'+perfilKey()).once('value');
+    const d=snap.val()||{};
+    favoritosAtual=Array.isArray(d.favoritos)?d.favoritos:Object.values(d.favoritos||{});
+    historicoAtual=Array.isArray(d.historico)?d.historico:Object.values(d.historico||{});
+    watchlistAtual=Array.isArray(d.watchlist)?d.watchlist:Object.values(d.watchlist||{});
   }catch(e){favoritosAtual=[];historicoAtual=[];watchlistAtual=[]}
   atualizarBadgeFav();
   renderizarRowWatchlist();
 }
 async function salvarDadosPerfil(){
   if(!perfilAtual)return;
-  try{await db.collection('perfis_dados').doc(perfilKey()).set({favoritos:favoritosAtual,historico:historicoAtual},{merge:true})}
-  catch(e){console.error(e)}
+  try{
+    const ref=rtdb.ref('perfis_dados/'+perfilKey());
+    const snap=await ref.once('value');
+    const ex=snap.val()||{};
+    await ref.set({...ex,favoritos:favoritosAtual,historico:historicoAtual});
+  }catch(e){console.error(e)}
 }
 function atualizarBadgeFav(){
   const b=document.getElementById('badgeFav');
@@ -2519,7 +2668,7 @@ function parsearM3U(texto){
   return canais;
 }
 
-// Normaliza campos do item vindos do Firestore (vários nomes possíveis do painel admin)
+// Normaliza campos do item vindos do Realtime Database (vários nomes possíveis do painel admin)
 function normalizarItem(raw, tipo){
   const item = {id: raw.id || '', tipo, ...raw};
   // URL de reprodução — aceita qualquer nome de campo
@@ -2545,32 +2694,45 @@ async function carregarCatalogo(){
   };
   Object.values(rows).forEach((r,i)=>{if(r){r.innerHTML='';criarSkeletons(r,i===5?4:6,i===5)}});
 
-  // Todas as coleções, incluindo TV diretamente do Firestore
-  const cols=[
-    {n:'filmes',    t:'filme',    r:rows.filmes,   isTV:false},
-    {n:'series',    t:'serie',    r:rows.series,   isTV:false},
-    {n:'animes',    t:'anime',    r:rows.animes,   isTV:false},
-    {n:'animes_tv', t:'anime_tv', r:rows.animestv, isTV:false},
-    {n:'tv',        t:'tv',       r:rows.tv,       isTV:true}
-  ];
+  // Lê todo o catálogo de "catalogo/" e distribui por tipo
+  const tipoMap = {
+    'filme':    {r:rows.filmes,   isTV:false},
+    'serie':    {r:rows.series,   isTV:false},
+    'anime':    {r:rows.animes,   isTV:false},
+    'anime_tv': {r:rows.animestv, isTV:false},
+    'tv':       {r:rows.tv,       isTV:true}
+  };
 
-  await Promise.allSettled(cols.map(async col=>{
-    try{
-      const snap = await db.collection(col.n).limit(200).get();
-      if(col.r) col.r.innerHTML='';
-      snap.forEach(doc=>{
-        const item = normalizarItem({id:doc.id,...doc.data()}, col.t);
-        todosConteudos.push(item);
-        if(col.r) criarPoster(item, col.r, col.isTV);
-        if(!col.isTV && rows.popular) criarPoster(item, rows.popular, false);
-      });
-      if(col.r && col.r.innerHTML==='') col.r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>';
-      console.log('[Firestore] "'+col.n+'": '+snap.size+' item(s)');
-    }catch(e){
-      console.warn('[Firestore] "'+col.n+'" inacessível:', e.message);
-      if(col.r){ col.r.querySelectorAll('.skeleton').forEach(s=>s.remove()); if(!col.r.querySelector('.poster-wrap')) col.r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>'; }
+  try {
+    // Timeout de 10s — se as regras do RTDB bloquearem, não trava para sempre
+    const snap = await Promise.race([
+      rtdb.ref('catalogo').once('value'),
+      new Promise((_,rej) => setTimeout(() => rej(new Error('Timeout ao carregar catálogo')), 10000))
+    ]);
+    const dados = snap.val() || {};
+    Object.values(tipoMap).forEach(({r}) => { if(r) r.innerHTML=''; });
+    let total = 0;
+    for(const id in dados){
+      const raw = dados[id];
+      const tipo = raw.tipo || 'filme';
+      const cfg = tipoMap[tipo];
+      if(!cfg) continue;
+      const item = normalizarItem({id, ...raw}, tipo);
+      todosConteudos.push(item);
+      if(cfg.r) criarPoster(item, cfg.r, cfg.isTV);
+      if(!cfg.isTV && rows.popular) criarPoster(item, rows.popular, false);
+      total++;
     }
-  }));
+    Object.entries(tipoMap).forEach(([,cfg]) => {
+      if(cfg.r && cfg.r.innerHTML==='') cfg.r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>';
+    });
+    console.log('[RTDB] catalogo: '+total+' item(s)');
+  } catch(e) {
+    console.warn('[RTDB] catalogo inacessível:', e.message);
+    Object.values(tipoMap).forEach(({r}) => {
+      if(r){ r.querySelectorAll('.skeleton').forEach(s=>s.remove()); if(!r.querySelector('.poster-wrap')) r.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>'; }
+    });
+  }
 
   if(rows.popular){
     rows.popular.querySelectorAll('.skeleton').forEach(s=>s.remove());
@@ -3113,7 +3275,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   setTimeout(() => {
     splash.classList.add('hide');
-    document.getElementById('loginBox').style.visibility = '';
+    // Só mostra loginBox se o app ainda não avançou para perfis/catálogo
+    const perfilBox = document.getElementById('perfilBox');
+    const appMain   = document.getElementById('appMain');
+    const jaEntrou  = (perfilBox && perfilBox.style.display === 'flex') ||
+                      (appMain   && appMain.style.display   === 'block');
+    if(!jaEntrou){
+      document.getElementById('loginBox').style.visibility = '';
+    }
     setTimeout(() => { splash.style.display = 'none'; }, 650);
   }, totalMs);
 })();
@@ -3215,7 +3384,8 @@ let watchlistAtual=[];
 async function carregarWatchlist(){
   if(!perfilAtual){ watchlistAtual=[]; return; }
   try{
-    const doc=await db.collection('perfis_dados').doc(perfilKey()).get();
+    const _wlSnap=await rtdb.ref('perfis_dados/'+perfilKey()).once('value');
+    const doc={exists:!!_wlSnap.val(),data:()=>_wlSnap.val()||{}};
     watchlistAtual=doc.exists?(doc.data().watchlist||[]):[];
   }catch(e){ watchlistAtual=[]; }
   renderizarRowWatchlist();
@@ -3226,7 +3396,12 @@ async function toggleWatchlist(item){
   const idx=watchlistAtual.findIndex(w=>w.id===item.id);
   if(idx>=0){ watchlistAtual.splice(idx,1); toast('Removido da Watchlist','gold'); }
   else{ watchlistAtual.unshift({id:item.id,titulo:item.titulo,poster:item.poster,tipo:item.tipo,player_url:item.player_url,categoria:item.categoria||''}); toast('Adicionado à lista de interesse','gold'); }
-  try{ await db.collection('perfis_dados').doc(perfilKey()).set({watchlist:watchlistAtual},{merge:true}); }catch(e){}
+  try{
+    const _wsRef=rtdb.ref('perfis_dados/'+perfilKey());
+    const _wsSnap=await _wsRef.once('value');
+    const _wsEx=_wsSnap.val()||{};
+    await _wsRef.set({..._wsEx,watchlist:watchlistAtual});
+  }catch(e){}
   renderizarRowWatchlist(); atualizarBotaoWatchlistModal(item.id);
 }
 async function toggleWatchlistModal(){ if(itemModalAtual) await toggleWatchlist(itemModalAtual); }
@@ -3653,7 +3828,7 @@ async function salvarEdicaoPerfil(){
   novosPerfis[editandoPerfilIdx]={nome:novoNome,avatar:novoAvatar};
   showLoading();
   try{
-    await db.collection('clientes').doc(usuarioAtual.uid).update({perfis:novosPerfis});
+    await rtdb.ref('clientes/'+usuarioAtual.uid).update({perfis:novosPerfis});
     perfisSalvos=novosPerfis;fecharModalEditarPerfil();renderizarPerfis(novosPerfis);showToast('Perfil atualizado','green');
   }catch(err){showToast('Erro: '+err.message,'red')}
   hideLoading();
@@ -4493,27 +4668,27 @@ let _adAtual = null;
 let _adUnsubscribe = null;
 const AD_SEEN_KEY = 'rs_ad_seen_';
 
-// Inicia o listener em tempo real na coleção 'anuncios'
+// Inicia o listener em tempo real no nó 'anuncios' do Realtime DB
 function iniciarListenerAnuncios() {
   try {
-    _adUnsubscribe = db.collection('anuncios')
-      .where('status', '==', 'ativo')
-      .orderBy('enviadoEm', 'desc')
-      .limit(1)
-      .onSnapshot(snapshot => {
-        if (snapshot.empty) return;
-        const doc = snapshot.docs[0];
-        const ad = { id: doc.id, ...doc.data() };
-
-        // Só exibe se ainda não foi visto nesta sessão para este envio
-        const seenKey = AD_SEEN_KEY + ad.id + '_' + (ad.enviadoEm?.seconds || '0');
-        if (sessionStorage.getItem(seenKey)) return;
-
-        // Pequeno delay para não aparecer antes do app carregar
+    const ref = rtdb.ref('anuncios');
+    const handler = snap => {
+      try {
+        const val = snap.val() || {};
+        // Filtra ativos, ordena por enviadoEm desc, pega o 1º
+        const ativos = Object.entries(val)
+          .filter(([,d]) => d.status === 'ativo' && d.enviadoEm)
+          .sort(([,a],[,b]) => (b.enviadoEm > a.enviadoEm ? 1 : -1));
+        if(ativos.length === 0) return;
+        const [id, data] = ativos[0];
+        const ad = { id, ...data };
+        const seenKey = AD_SEEN_KEY + ad.id + '_' + String(ad.enviadoEm||'0').replace(/[^0-9]/g,'').slice(0,10);
+        if(sessionStorage.getItem(seenKey)) return;
         setTimeout(() => exibirAdPopup(ad, seenKey), 2500);
-      }, err => {
-        console.warn('[Anúncios] Listener error:', err);
-      });
+      } catch(e) { console.warn('[Anúncios] Handler error:', e); }
+    };
+    ref.on('value', handler, err => console.warn('[Anúncios] Listener error:', err));
+    _adUnsubscribe = () => ref.off('value', handler);
   } catch(e) {
     console.warn('[Anúncios] Falha ao iniciar listener:', e);
   }
