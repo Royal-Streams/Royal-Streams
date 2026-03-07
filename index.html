@@ -1950,14 +1950,29 @@ input[type="search"]::-webkit-search-cancel-button{-webkit-appearance:none;heigh
     <button class="btn-stats-close" onclick="fecharStats()">Fechar</button>
   </div>
 </div>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-firebase.initializeApp({apiKey:"AIzaSyAyH7q3GOeFq5B_m8kDnxCJ0N14xYiBkEc",authDomain:"royal-streams-web.firebaseapp.com",projectId:"royal-streams-web",databaseURL:"https://royal-streams-web-default-rtdb.firebaseio.com",storageBucket:"royal-streams-web.firebasestorage.app",messagingSenderId:"239998986476",appId:"1:239998986476:web:8a2e9942aafa180bdcddc9",measurementId:"G-H74918T0SV"});
-const auth=firebase.auth(),db=firebase.firestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyAyH7q3GOeFq5B_m8kDnxCJ0N14xYiBkEc",
+  authDomain: "royal-streams-web.firebaseapp.com",
+  databaseURL: "https://royal-streams-web-default-rtdb.firebaseio.com",
+  projectId: "royal-streams-web",
+  storageBucket: "royal-streams-web.firebasestorage.app",
+  messagingSenderId: "239998986476",
+  appId: "1:239998986476:web:8a2e9942aafa180bdcddc9",
+  measurementId: "G-H74918T0SV"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const rtdb = firebase.database();
+const analytics = firebase.analytics();
 
 // ── PERSISTÊNCIA DE SESSÃO ──
 // Firebase já mantém o usuário logado automaticamente.
