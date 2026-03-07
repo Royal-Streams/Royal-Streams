@@ -494,7 +494,11 @@ body::after{
 .banner::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(8,8,8,1) 0%,transparent 32%);pointer-events:none}
 .banner-content{max-width:580px;z-index:10;position:relative}
 .banner-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(201,162,39,.15),rgba(201,162,39,.07));color:var(--gold);font-size:10px;font-weight:700;letter-spacing:2.5px;padding:5px 14px;border-radius:20px;margin-bottom:18px;text-transform:uppercase;border:1px solid rgba(201,162,39,.25);backdrop-filter:blur(8px)}
-.banner-title{font-family:var(--font-display);font-size:clamp(36px,5.5vw,68px);line-height:.95;letter-spacing:2px;margin-bottom:16px;text-shadow:0 4px 40px rgba(0,0,0,.95)}
+.banner-title{
+font-size: clamp(22px,4vw,34px);
+line-height:1.2;
+font-weight:700;
+}
 .banner-meta{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
 .banner-meta-item{font-size:13px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:5px}
 .banner-meta-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.3)}
@@ -2304,10 +2308,8 @@ function navegar(secao){
       if(itens.length === 0){
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:60px 0">Nenhum favorito ainda</div>';
       } else {
-        itens.forEach(item => {
-          if(item.tipo==='tv') criarPoster(item,grid,true);
-          else criarCardItem(item,grid);
-        });
+        itens.forEach(item => criarPoster(item, grid, item.tipo==='tv'));
+        grid.querySelectorAll('.poster-wrap').forEach((el,i) => setTimeout(() => el.classList.add('visible'), i*30));
       }
       return;
     }
@@ -2782,7 +2784,7 @@ async function carregarCatalogo(){
     if(rows.popular.innerHTML==='') rows.popular.innerHTML='<div class="empty-state">Nenhum conteúdo ainda</div>';
   }
   const comPoster=todosConteudos.filter(c=>c.poster&&c.tipo!=='tv');
-  if(comPoster.length>0){bannerData=comPoster[Math.floor(Math.random()*Math.min(comPoster.length,5))];atualizarBanner(bannerData);}
+  if(comPoster.length>0){bannerData=comPoster[Math.floor(Math.random()*comPoster.length)];atualizarBanner(bannerData);}
   renderizarRowFavoritos(); renderizarRowContinuar();
   document.querySelectorAll('.poster-wrap').forEach((el,i)=>setTimeout(()=>el.classList.add('visible'),i*40));
   hideLoading();
@@ -2802,7 +2804,7 @@ function criarCardItem(item,container){
   const card=document.createElement('div');
   card.className='card-item';
   const poster=item.poster||'https://via.placeholder.com/300x130/151515/444?text=+';
-  card.innerHTML=`<img src="${poster}" alt="${item.titulo||''}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x130/151515/444?text=+'"><span>${item.titulo||'Sem título'}</span>`;
+  card.innerHTML=`<img src="${poster}" loading="lazy" alt="${item.titulo||''}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x130/151515/444?text=+'"><span>${item.titulo||'Sem título'}</span>`;
   card.addEventListener('click',()=>abrirModal(item));
   container.appendChild(card);
 }
@@ -3441,7 +3443,7 @@ async function toggleWatchlist(item){
   else{ watchlistAtual.unshift({id:item.id,titulo:item.titulo,poster:item.poster,tipo:item.tipo,player_url:item.player_url,categoria:item.categoria||''}); toast('Adicionado à lista de interesse','gold'); }
   try{
     const _wsRef=rtdb.ref('perfis_dados/'+perfilKey());
-    const _wsSnap=await _wsRef.once('value');
+    const _wsSnap=await _wsRef.get();
     const _wsEx=_wsSnap.val()||{};
     await _wsRef.set({..._wsEx,watchlist:watchlistAtual});
   }catch(e){}
